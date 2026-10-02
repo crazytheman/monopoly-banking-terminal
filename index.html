@@ -4,11 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#b3121f">
-<title>Banking Terminal</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Термінал">
+<title>Банківський термінал</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=VT323&display=swap">
 <style>
-/* Layout: one phone-height "unit": camera card reader on top, LCD screen in the middle, chunky keys at the bottom. */
+/* Layout: one phone-height "unit": camera card reader on top, LCD screen in the middle, chunky keys at the bottom.
+   On a tablet the unit stays on the left and the panels sit beside it. */
 :root{
   --shell:#b3121f; --shell-dk:#7d0b15; --lcd:#c9d6c3; --lcd-ink:#1f2b1c; --lcd-dim:#5d6e58;
   --key:#f4f4f2; --key-ink:#1d1d1f; --bg:#eceae6; --fg:#1d1d1f; --muted:#6b6862; --line:#d3d0ca;
@@ -24,10 +32,17 @@
   --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 var(--font-ui);-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 var(--font-ui);-webkit-tap-highlight-color:transparent;
+  padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
 button{font:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #2a7de1;outline-offset:2px}
-.wrap{max-width:520px;margin:0 auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:12px}
+.wrap{max-width:520px;margin:0 auto;padding:max(12px,env(safe-area-inset-top,0px)) 16px max(24px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (min-width:900px){
+  .wrap{max-width:1180px;display:grid;grid-template-columns:minmax(380px,540px) minmax(0,1fr);align-items:start;gap:16px}
+  .unit{position:sticky;top:max(12px,env(safe-area-inset-top,0px))}
+  .side .cards{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+}
 .unit{background:var(--shell);border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:12px;box-shadow:inset 0 -6px 0 var(--shell-dk)}
 .top{display:flex;flex-direction:column;gap:8px}
 .brand{display:flex;gap:8px;align-items:center;color:#fff;flex-wrap:wrap}
@@ -43,6 +58,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .lcd .big{font-size:38px;line-height:1}
 .lcd .dim{color:var(--lcd-dim)}
 .lcd .uk{font-family:var(--font-ui);font-weight:800;font-size:18px;line-height:1.2}
+.lcd .txt{font-family:var(--font-ui);font-size:15px;line-height:1.35}
 .lcd .blink{animation:bl 1s steps(2) infinite}
 @keyframes bl{50%{opacity:.2}}
 @media (prefers-reduced-motion:reduce){.lcd .blink{animation:none}}
@@ -68,7 +84,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
 .cardbtn{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:6px;font-size:12px;text-align:left;min-height:44px;display:flex;gap:6px;align-items:center}
 .cardbtn i{flex:0 0 8px;align-self:stretch;border-radius:3px}
-.log{font-size:13px;color:var(--muted);max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums}
+.log{font-size:13px;color:var(--muted);max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums}
 details summary{cursor:pointer;font-weight:600}
 table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
 td,th{padding:4px;border-bottom:1px solid var(--line);text-align:left}
@@ -77,6 +93,7 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
 .btn{background:var(--fg);color:var(--bg);border:0;border-radius:8px;padding:9px 12px;font-weight:600}
 .btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
 .note{font-size:13px;color:var(--muted);margin:0}
+.install{border-color:var(--shell)}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 14px;border-radius:10px;font-weight:600;max-width:90vw;z-index:9}
 </style>
 </head>
@@ -84,115 +101,128 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
 <div class="wrap" id="app">
   <div class="unit">
     <div class="top">
-      <div class="brand"><h1>Banking Terminal</h1>
-        <button class="chip" id="btnCam">Camera</button>
-        <button class="chip" id="btnTorch" hidden>Light</button>
-        <button class="chip" id="btnSound">Sound on</button>
+      <div class="brand"><h1>Банківський термінал</h1>
+        <button class="chip" id="btnCam">Камера</button>
+        <button class="chip" id="btnTorch" hidden>Світло</button>
+        <button class="chip" id="btnSound">Звук увімк.</button>
       </div>
-      <div class="reader" id="reader"><video id="vid" playsinline muted></video><div class="frame"></div><div class="off" id="camoff">Tap to start the card reader</div></div>
-      <div class="rstat" id="rstat">Show the white bar-code strip of a card inside the box.</div>
+      <div class="reader" id="reader"><video id="vid" playsinline muted></video><div class="frame"></div><div class="off" id="camoff">Торкніться, щоб увімкнути зчитувач карток</div></div>
+      <div class="rstat" id="rstat">Покажіть білу смужку зі штрихкодом картки в рамці.</div>
     </div>
     <div class="lcd" id="lcd" aria-live="polite"></div>
     <div class="keys" id="keys">
-      <button class="key go" data-k="go">GO<br>+200</button>
-      <button class="key" data-k="loc">Location<br>−100</button>
-      <button class="key" data-k="jail">Jail<br>−100</button>
-      <button class="key" data-k="exit">✖ Exit</button>
-      <button class="key" data-k="auction">Auction</button>
-      <button class="key" data-k="bid">+20 Bid</button>
-      <button class="key wide" data-k="undo">Cancel last</button>
+      <button class="key go" data-k="go">ВПЕРЕД<br>+200</button>
+      <button class="key" data-k="loc">Локація<br>−100</button>
+      <button class="key" data-k="jail">В'язниця<br>−100</button>
+      <button class="key" data-k="exit">✖ Вихід</button>
+      <button class="key" data-k="auction">Аукціон</button>
+      <button class="key" data-k="bid">+20 Ставка</button>
+      <button class="key wide" data-k="undo">Скасувати останню</button>
     </div>
   </div>
 
-  <div class="panel">
-    <h2>Tap a card manually</h2>
-    <p class="note">Use this if the camera can't read a card. It does the same thing as scanning.</p>
-    <div class="cards" id="manual"></div>
-  </div>
-
-  <div class="panel">
-    <h2>Players &amp; jail</h2>
-    <div id="jailctl" class="actions"></div>
-  </div>
-
-  <div class="panel">
-    <h2>Activity</h2>
-    <div class="log" id="log"></div>
-  </div>
-
-  <div class="panel">
-    <h2>Set up</h2>
-    <details><summary>Title Deeds (prices and rents)</summary>
-      <p class="note">Rents are copied from your Title Deed cards and prices from your board.</p>
-      <div class="tablewrap"><table id="deeds"></table></div>
-    </details>
-    <div class="actions">
-      <button class="btn ghost" id="btnNew">New game</button>
+  <div class="side">
+    <div class="panel install" id="installHint" hidden>
+      <h2>Встановити на iPad</h2>
+      <p class="note">Відкрийте цю сторінку в Safari, натисніть «Поділитися» (квадрат зі стрілкою), потім «На початковий екран». Термінал запускатиметься як окрема програма на весь екран.</p>
     </div>
-    <div id="confirmNew" class="actions" hidden>
-      <span class="note" style="flex-basis:100%">Wipe balances and ownership and start a new game?</span>
-      <button class="btn" id="btnNewYes">Yes, new game</button>
-      <button class="btn ghost" id="btnNewNo">Keep playing</button>
+
+    <div class="panel">
+      <h2>Прикласти картку вручну</h2>
+      <p class="note">Якщо камера не зчитує картку. Діє так само, як сканування.</p>
+      <div class="cards" id="manual"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Гравці та В'язниця</h2>
+      <div id="jailctl" class="actions"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Журнал</h2>
+      <div class="log" id="log"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Налаштування</h2>
+      <details><summary>Картки власності (ціни та оренда)</summary>
+        <p class="note">Оренда взята з ваших карток власності, ціни з ігрового поля.</p>
+        <div class="tablewrap"><table id="deeds"></table></div>
+      </details>
+      <div class="actions">
+        <button class="btn ghost" id="btnNew">Нова гра</button>
+      </div>
+      <div id="confirmNew" class="actions" hidden>
+        <span class="note" style="flex-basis:100%">Скинути баланси й власність і почати нову гру?</span>
+        <button class="btn" id="btnNewYes">Так, нова гра</button>
+        <button class="btn ghost" id="btnNewNo">Продовжити гру</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
 'use strict';
-/* ---------- static data (Ukrainian edition, read from the real cards) ---------- */
+/* ---------- дані гри (українське видання, з карток і поля) ---------- */
 const CUR='₼';
-const TOKENS = ['Car','Helicopter','Ship','Jet'];           // Bank cards 0001..0004
+const TOKENS = ['Автомобіль','Гелікоптер','Яхта','Літак'];   // Банківські картки 0001..0004
 const GROUPS = {brown:'--c-brown',lblue:'--c-lblue',pink:'--c-pink',orange:'--c-orange',red:'--c-red',yellow:'--c-yellow',green:'--c-green',dblue:'--c-dblue'};
-const BASE_PROPS = [ // [name on card, English, group, price, rents L1..L5]
- ['Києво-Печерська лавра','Kyiv Pechersk Lavra','brown',60,[70,130,220,370,750]],
- ['Батьківщина-Мати','Motherland Monument','brown',60,[70,130,220,370,750]],
- ['Пізанська вежа','Leaning Tower of Pisa','lblue',100,[80,140,240,410,800]],
- ['Венеція','Venice','lblue',100,[80,140,240,410,800]],
- ['Колізей','Colosseum','lblue',120,[100,160,260,440,860]],
- ['Тріумфальна арка','Arc de Triomphe','pink',140,[110,180,290,460,900]],
- ['Єлисейські поля','Champs-Élysées','pink',140,[110,180,290,460,900]],
- ['Ейфелева вежа','Eiffel Tower','pink',160,[130,200,310,490,980]],
- ['Співаючі фонтани','Dubai Fountain','orange',180,[140,210,330,520,1000]],
- ['Острови Пальм','Palm Islands','orange',180,[140,210,330,520,1000]],
- ['Бурдж-Халіфа','Burj Khalifa','orange',200,[160,230,350,550,1100]],
- ['Октоберфест','Oktoberfest','red',220,[170,250,380,580,1160]],
- ['Бундестаг','Bundestag','red',220,[170,250,380,580,1160]],
- ['Бранденбурзькі ворота','Brandenburg Gate','red',240,[190,270,400,610,1200]],
- ['Оксфордський університет','Oxford University','yellow',260,[200,280,420,640,1300]],
- ['Стадіон Уемблі','Wembley Stadium','yellow',260,[200,280,420,640,1300]],
- ['Біг-Бен','Big Ben','yellow',280,[220,300,440,670,1340]],
- ['Шанхай','Shanghai','green',300,[230,320,460,700,1400]],
- ['Великий Китайський мур','Great Wall of China','green',300,[230,320,460,700,1400]],
- ['Гонконг','Hong Kong','green',320,[250,340,480,730,1440]],
- ['Голлівуд','Hollywood','dblue',350,[270,360,510,740,1500]],
- ['Волл-стріт','Wall Street','dblue',400,[300,400,560,810,1600]]];
-const SIDES = [[0,4],[5,10],[11,16],[17,21]]; // property index ranges per side of the board
-// Event cards: type drives what the terminal waits for next.
+const BASE_PROPS = [ // [назва на картці, група, ціна, оренда Р1..Р5]
+ ['Києво-Печерська лавра','brown',60,[70,130,220,370,750]],
+ ['Батьківщина-Мати','brown',60,[70,130,220,370,750]],
+ ['Пізанська вежа','lblue',100,[80,140,240,410,800]],
+ ['Венеція','lblue',100,[80,140,240,410,800]],
+ ['Колізей','lblue',120,[100,160,260,440,860]],
+ ['Тріумфальна арка','pink',140,[110,180,290,460,900]],
+ ['Єлисейські поля','pink',140,[110,180,290,460,900]],
+ ['Ейфелева вежа','pink',160,[130,200,310,490,980]],
+ ['Співаючі фонтани','orange',180,[140,210,330,520,1000]],
+ ['Острови Пальм','orange',180,[140,210,330,520,1000]],
+ ['Бурдж-Халіфа','orange',200,[160,230,350,550,1100]],
+ ['Октоберфест','red',220,[170,250,380,580,1160]],
+ ['Бундестаг','red',220,[170,250,380,580,1160]],
+ ['Бранденбурзькі ворота','red',240,[190,270,400,610,1200]],
+ ['Оксфордський університет','yellow',260,[200,280,420,640,1300]],
+ ['Стадіон Уемблі','yellow',260,[200,280,420,640,1300]],
+ ['Біг-Бен','yellow',280,[220,300,440,670,1340]],
+ ['Шанхай','green',300,[230,320,460,700,1400]],
+ ['Великий Китайський мур','green',300,[230,320,460,700,1400]],
+ ['Гонконг','green',320,[250,340,480,730,1440]],
+ ['Голлівуд','dblue',350,[270,360,510,740,1500]],
+ ['Волл-стріт','dblue',400,[300,400,560,810,1600]]];
+const SIDES = [[0,4],[5,10],[11,16],[17,21]]; // номери власності на кожній стороні поля
+// Картки «Подія»: тип визначає, на яку картку чекає термінал далі.
+const BUY_ANY='Перейдіть на будь-яке поле власності. Покажіть його картку, щоб купити, виставити на Аукціон або підвищити оренду на +1.';
+const GROUP_UP='Покажіть одну з ваших карток власності: оренда для всієї групи кольору +1.';
+const PARTY='Покажіть одну з ваших карток власності: ваша оренда +1, у сусідів −1.';
+const DOWN_1='Покажіть будь-яку картку власності: оренда знижується до рівня 1.';
+const BOTH='Оберіть іншого гравця. Покажіть обидві ваші Банківські картки: кожен отримує '+CUR+'200.';
+const SWAP='Оберіть іншого гравця й обміняйтеся власністю: покажіть свою картку власності, потім його. Не забудьте обмінятися картками!';
 const EVENTS = [
- ['Добрі справи!','Choose another player. Both tap your Bank cards: you each get '+CUR+'200.','both',200],
- ['Місто зростає!','Move to any property. Tap its Title Deed, then buy it, auction it or raise its rent +1.','move'],
- ['Дом з привидами','Choose another player and swap one property each. Tap your Title Deed, then theirs.','swap'],
- ['Безпечне місто','Tap one of your Title Deeds: rent for that whole colour set +1.','groupUp'],
- ['Метелики у животі','Choose another player. Both tap your Bank cards: you each get '+CUR+'200.','both',200],
- ['Пакуй валізи','Tap one of your Title Deeds: rent for that whole colour set +1.','groupUp'],
- ['Паті на хаті','Tap one of your Title Deeds: its rent +1, its neighbours −1.','partyUp'],
- ['Великий куш','Tap one of your Title Deeds: its rent goes to level 5.','max'],
- ['Дорожній збір','Tap your Bank card: pay '+CUR+'50 for each property you own.','perProp',50],
- ['Затор на дорозі','Everyone moves to Free Parking. Don\'t pass GO. Anyone in Jail stays there.','none'],
- ['Мані на кармані','Swap any of your properties for another player\'s. Tap your Title Deed, then theirs.','swap'],
- ['Поверніть своє','Send another player to Jail: tap their Bank card.','jail'],
- ['Сезон застуд','Tap one of your Title Deeds: rent for that whole colour set −1.','groupDown'],
- ['Що смердить?!','Tap one of your Title Deeds: rent on that side of the board −1.','sideDown'],
- ['Біжи, друже... біжи','The next two rent payments are charged at level 1.','marathon'],
- ['Будівля знесена','Tap any Title Deed: its rent drops to level 1.','min'],
- ['Це хлопчик!','Tap one of your Title Deeds: its rent +1, its neighbours −1.','partyUp'],
- ['Угода тижня','Move to any property. Tap its Title Deed, then buy it, auction it or raise its rent +1.','move'],
- ['Помста Бобіка','Tap any Title Deed: its rent drops to level 1.','min'],
- ['Несподіваний ураган','Tap any Title Deed: its rent drops to level 1.','min'],
- ['Скандали. Інтриги. Розслідування','Move to any property. Tap its Title Deed, then buy it, auction it or raise its rent +1.','move'],
- ['У нас на районі зірка','Tap one of your Title Deeds: rent for that whole colour set +1.','groupUp'],
- ['Прокатись з вітерцем','Tap any Title Deed: rent on that side of the board +1.','sideUp']];
-// Bar codes read from the cards. 5 slots, the middle one is the wide marker; '.' empty, L/R = bar position in the slot.
+ ['Добрі справи!',BOTH,'both',200],
+ ['Місто зростає!',BUY_ANY,'move'],
+ ['Дом з привидами',SWAP,'swap'],
+ ['Безпечне місто',GROUP_UP,'groupUp'],
+ ['Метелики у животі',BOTH,'both',200],
+ ['Пакуй валізи',GROUP_UP,'groupUp'],
+ ['Паті на хаті',PARTY,'partyUp'],
+ ['Великий куш','Покажіть одну з ваших карток власності: оренда зростає до рівня 5.','max'],
+ ['Дорожній збір','Покажіть свою Банківську картку: сплатіть '+CUR+'50 за кожен ваш об’єкт власності.','perProp',50],
+ ['Затор на дорозі','Усі гравці переходять на Безкоштовну парковку. Не проходьте поле «ВПЕРЕД»! Хто у В’язниці, залишається там.','none'],
+ ['Мані на кармані',SWAP,'swap'],
+ ['Поверніть своє','Відправте іншого гравця до В’язниці: покажіть його Банківську картку.','jail'],
+ ['Сезон застуд','Покажіть одну з ваших карток власності: оренда для всієї групи кольору −1.','groupDown'],
+ ['Що смердить?!','Покажіть одну з ваших карток власності: оренда на цій стороні поля −1.','sideDown'],
+ ['Біжи, друже... біжи','Наступні дві оплати оренди буде прийнято за першим рівнем.','marathon'],
+ ['Будівля знесена',DOWN_1,'min'],
+ ['Це хлопчик!',PARTY,'partyUp'],
+ ['Угода тижня',BUY_ANY,'move'],
+ ['Помста Бобіка',DOWN_1,'min'],
+ ['Несподіваний ураган',DOWN_1,'min'],
+ ['Скандали. Інтриги. Розслідування',BUY_ANY,'move'],
+ ['У нас на районі зірка',GROUP_UP,'groupUp'],
+ ['Прокатись з вітерцем','Покажіть будь-яку картку власності: оренда на цій стороні поля +1.','sideUp']];
+// Штрихкоди з карток. 5 позицій, середня завжди позначка; '.' порожньо, L/R — положення смужки.
 const BASE_CODES = {
  '..R.R':'B1','..L.L':'B2','..RR.':'B3','..LRR':'B4',
  '.RR..':'P1','.RL.R':'P2','.RR.L':'P3','.RLR.':'P4','.RRRR':'P5','.RLRL':'P6','.RRL.':'P7','.RLLR':'P8','.RRLL':'P9',
@@ -200,38 +230,41 @@ const BASE_CODES = {
  'R.R..':'P19','R.L.R':'P20','R.R.L':'P21','R.LR.':'P22',
  'L.LLL':'E1','L.RR.':'E2','L.RLR':'E3','RLLRL':'E4','LRR..':'E5','LRLRL':'E6','RLLLR':'E7','RLR..':'E8',
  'LRL.R':'E9','LRLR.':'E10','L.LL.':'E11','LRR.L':'E12','LRRRR':'E13','L.L..':'E14','L.L.L':'E15','RLR.L':'E16',
- 'RLRL.':'E17','L.RRL':'E18','RLLR.':'E19','RLL..':'E20','L.LRR':'E21','RLRRR':'E22','RLRLL':'E23'};
+ 'RLRL.':'E17','L.RRL':'E18','RLLR.':'E19','RLL.R':'E20','L.LRR':'E21','RLRRR':'E22','RLRLL':'E23'};
 
-/* ---------- storage ---------- */
+/* ---------- збереження ---------- */
 const store = {
   get(k,d){try{const v=localStorage.getItem('mub2:'+k);return v?JSON.parse(v):d}catch(e){return d}},
   set(k,v){try{localStorage.setItem('mub2:'+k,JSON.stringify(v))}catch(e){}}
 };
-let DEEDS = store.get('deeds', null) || BASE_PROPS.map(([name,en,group,price,rents])=>({name,en,group,price,rents:[...rents]}));
+let DEEDS = store.get('deeds', null) || BASE_PROPS.map(([name,group,price,rents])=>({name,group,price,rents:[...rents]}));
 let CODES = {...BASE_CODES, ...store.get('codefix', {})};
 const freshGame = () => ({phase:'setup', players:TOKENS.map(t=>({name:t,joined:false,bal:0,jail:false,out:false})),
   props:DEEDS.map(()=>({owner:null,level:0})), bonus:{}, cheap:0, queue:[], debt:null, undo:null, log:[], winner:null});
 let G = store.get('game', null) || freshGame();
+G.players.forEach((p,i)=>p.name=TOKENS[i]);                         // older saves used English names
 const save = () => {store.set('game',G); store.set('deeds',DEEDS)};
 
-/* ---------- transient terminal mode ---------- */
+/* ---------- поточний режим термінала ---------- */
 let M = {k:'idle'}; let modeTimer = null;
 function setMode(m, timeoutMs){ M=m; clearTimeout(modeTimer); if(timeoutMs) modeTimer=setTimeout(()=>{M={k:'idle'};render()},timeoutMs); render(); }
 
-/* ---------- helpers ---------- */
+/* ---------- допоміжне ---------- */
 const $ = s => document.querySelector(s);
 const money = n => CUR+Math.round(n).toLocaleString('uk-UA');
-const pName = i => i==null ? 'Bank' : G.players[i].name;
+const pName = i => i==null ? 'Банк' : G.players[i].name;
 const active = () => G.players.map((p,i)=>i).filter(i=>G.players[i].joined && !G.players[i].out);
 const rentOf = i => DEEDS[i].rents[Math.max(0,G.props[i].level-1)];
 const ownedBy = pi => G.props.map((p,i)=>i).filter(i=>G.props[i].owner===pi);
 const wealth = pi => G.players[pi].bal + ownedBy(pi).reduce((s,i)=>s+DEEDS[i].price,0);
 const pn = i => DEEDS[i].name;
+const plural = (n,one,few,many) => { const a=Math.abs(n)%100, b=a%10; return (a>10&&a<20)?many : b===1?one : (b>=2&&b<=4)?few : many; };
+const levels = n => `${n} ${plural(n,'рівень','рівні','рівнів')}`;
 function log(t){ G.log.unshift(t); G.log.length=Math.min(G.log.length,80); }
 const snap = label => ({label, players:JSON.parse(JSON.stringify(G.players)), props:JSON.parse(JSON.stringify(G.props)), bonus:{...G.bonus}, cheap:G.cheap});
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-/* ---------- sound ---------- */
+/* ---------- звук ---------- */
 let AC=null, soundOn = store.get('sound', true);
 function tone(freqs, dur=.09, type='square'){
   if(!soundOn) return; try{ AC = AC || new (window.AudioContext||window.webkitAudioContext)();
@@ -239,10 +272,10 @@ function tone(freqs, dur=.09, type='square'){
 }
 const S = {beep:()=>tone([1320]), ok:()=>tone([880,1320],.08), cash:()=>tone([1568,2093,2637],.07,'triangle'),
   bad:()=>tone([220,160],.15,'sawtooth'), fanfare:()=>tone([523,659,784,1047,784,1047],.12,'triangle'), tick:()=>tone([660],.05)};
-function toast(t){ const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2400); }
+function toast(t){ const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2600); }
 
-/* ---------- payments & debt ---------- */
-// Payments are queued; a shortfall pauses the queue in G.debt until the debtor hands over Title Deeds.
+/* ---------- платежі та борги ---------- */
+// Платежі йдуть у чергу; якщо грошей не вистачає, черга чекає в G.debt, доки боржник не віддасть картки власності.
 function queuePay(from,to,amt,label){ if(amt>0) G.queue.push({from,to,amt,label}); }
 function runQueue(){
   while(!G.debt && G.queue.length && G.phase==='play'){
@@ -251,28 +284,28 @@ function runQueue(){
     const paid=Math.min(p.bal,q.amt); p.bal-=paid; if(q.to!=null) G.players[q.to].bal+=paid;
     if(paid<q.amt){
       G.undo=null; G.debt={debtor:q.from, creditor:q.to, remaining:q.amt-paid, label:q.label};
-      log(`${p.name} is short ${money(q.amt-paid)} (${q.label})`);
+      log(`${p.name}: не вистачає ${money(q.amt-paid)} (${q.label})`);
       if(!ownedBy(q.from).length) bankrupt();
       else S.bad();
-    } else log(`${p.name} paid ${pName(q.to)} ${money(q.amt)}: ${q.label}`);
+    } else log(`${p.name} → ${pName(q.to)}: ${money(q.amt)}, ${q.label}`);
   }
   save(); render();
 }
 function surrender(i){
   const d=G.debt; if(!d) return;
-  if(G.props[i].owner!==d.debtor){ S.bad(); toast(`${pn(i)} isn't ${pName(d.debtor)}'s`); return; }
+  if(G.props[i].owner!==d.debtor){ S.bad(); toast(`${pn(i)} не належить гравцю ${pName(d.debtor)}`); return; }
   const val=DEEDS[i].price;
-  if(d.creditor==null){ G.props[i]={owner:null,level:0}; log(`${pName(d.debtor)} returned ${pn(i)} to the Bank`); }
-  else { G.props[i].owner=d.creditor; log(`${pName(d.debtor)} gave ${pn(i)} to ${pName(d.creditor)}`); }
+  if(d.creditor==null){ G.props[i]={owner:null,level:0}; log(`${pn(i)}: ${pName(d.debtor)} повертає Банку`); }
+  else { G.props[i].owner=d.creditor; log(`${pn(i)}: ${pName(d.debtor)} → ${pName(d.creditor)}`); }
   d.remaining-=val; S.ok();
-  if(d.remaining<=0){ G.players[d.debtor].bal+=-d.remaining; if(d.remaining<0) log(`${money(-d.remaining)} change returned to ${pName(d.debtor)}`); G.debt=null; runQueue(); return; }
+  if(d.remaining<=0){ G.players[d.debtor].bal+=-d.remaining; if(d.remaining<0) log(`Решта ${money(-d.remaining)} → ${pName(d.debtor)}`); G.debt=null; runQueue(); return; }
   if(!ownedBy(d.debtor).length) bankrupt();
   save(); render();
 }
 function bankrupt(){
   const d=G.debt; const p=G.players[d.debtor]; p.out=true; p.bal=0;
-  if(d.creditor!=null){ G.players[d.creditor].bal+=d.remaining; log(`Bank covers the unpaid ${money(d.remaining)} to ${pName(d.creditor)}`); }
-  log(`${p.name} is BANKRUPT`); G.debt=null; G.queue=[]; endGame();
+  if(d.creditor!=null){ G.players[d.creditor].bal+=d.remaining; log(`Банк доплачує ${pName(d.creditor)} ${money(d.remaining)} несплаченого боргу`); }
+  log(`${p.name}: БАНКРУТ`); G.debt=null; G.queue=[]; endGame();
 }
 function endGame(){
   G.phase='over';
@@ -280,7 +313,7 @@ function endGame(){
   S.fanfare(); save(); setMode({k:'idle'});
 }
 
-/* ---------- property rules ---------- */
+/* ---------- правила власності ---------- */
 function bump(i, n){ const p=G.props[i]; if(p.owner==null) return false; p.level=Math.max(1,Math.min(5,p.level+n)); return true; }
 function setLevel(i, n){ const p=G.props[i]; if(p.owner==null) return false; p.level=n; return true; }
 function neighbours(i){ const n=DEEDS.length; return [(i+n-1)%n,(i+1)%n]; }
@@ -292,19 +325,19 @@ function checkSet(i){
   if(members.some(k=>G.props[k].owner==null)) return;
   const n=new Set(members.map(k=>G.props[k].owner)).size===1?2:1;
   members.forEach(k=>bump(k,n)); G.bonus[g]=true; S.fanfare();
-  log(`Colour set complete! ${members.map(pn).join(', ')} jump ${n} level${n>1?'s':''}`);
-  toast(`Colour set bonus: +${n} rent level${n>1?'s':''}. Move the houses!`);
+  log(`Групу кольору зібрано! ${members.map(pn).join(', ')}: +${levels(n)}`);
+  toast(`Бонус за групу кольору: +${levels(n)}. Пересуньте будинки!`);
 }
 function buy(pi,i,price,label){
   const pl=G.players[pi];
-  if(pl.jail){ S.bad(); toast(`${pl.name} is in Jail and can't buy`); return false; }
-  if(pl.bal<price){ S.bad(); toast(`${pl.name} only has ${money(pl.bal)}`); return false; }
+  if(pl.jail){ S.bad(); toast(`${pl.name} у В'язниці й не може купувати`); return false; }
+  if(pl.bal<price){ S.bad(); toast(`${pl.name}: на рахунку лише ${money(pl.bal)}`); return false; }
   G.undo=snap(label); pl.bal-=price; G.props[i]={owner:pi,level:1};
-  log(`${pl.name} bought ${pn(i)} for ${money(price)}`); S.cash();
+  log(`${pl.name} купує «${pn(i)}» за ${money(price)}`); S.cash();
   checkSet(i); save(); return true;
 }
 
-/* ---------- card handling ---------- */
+/* ---------- обробка карток ---------- */
 function onCard(id, code){
   const m=/^([BPE])(\d{1,2})$/.exec(id); if(!m) return;
   const t=m[1], n=+m[2]-1;
@@ -315,24 +348,24 @@ function onCard(id, code){
 
 function onBank(pi){
   S.beep(); const pl=G.players[pi];
-  if(G.phase==='setup'){ pl.joined=!pl.joined; log(`${pl.name} ${pl.joined?'joined':'left'}`); save(); render(); return; }
+  if(G.phase==='setup'){ pl.joined=!pl.joined; log(`${pl.name} ${pl.joined?'приєднується до гри':'виходить з гри'}`); save(); render(); return; }
   if(G.phase==='over') return;
-  if(!pl.joined){ toast(`${pl.name} isn't in this game`); return; }
-  if(pl.out){ toast(`${pl.name} is bankrupt`); return; }
-  if(G.debt){ toast(`Finish the debt first: ${pName(G.debt.debtor)} hands over Title Deeds`); return; }
+  if(!pl.joined){ toast(`${pl.name} не бере участі в цій грі`); return; }
+  if(pl.out){ toast(`${pl.name}: банкрут`); return; }
+  if(G.debt){ toast(`Спершу закрийте борг: ${pName(G.debt.debtor)} віддає картки власності`); return; }
   switch(M.k){
     case 'prop': return bankOnProp(pi, M.i, false);
-    case 'locprop': return toast('Tap the Title Deed of the property you moved to first');
-    case 'locbuy': if(M.pi!=null && pi!==M.pi) return toast(`Waiting for ${pName(M.pi)}'s card`); return bankOnProp(pi, M.i, true);
-    case 'go': G.undo=snap('GO salary'); pl.bal+=200; log(`${pl.name} collected ${money(200)} for passing GO`); S.cash(); save(); return setMode({k:'idle'});
+    case 'locprop': return toast('Спершу покажіть картку власності поля, на яке ви перейшли');
+    case 'locbuy': if(M.pi!=null && pi!==M.pi) return toast(`Чекаю на картку: ${pName(M.pi)}`); return bankOnProp(pi, M.i, true);
+    case 'go': G.undo=snap('ВПЕРЕД'); pl.bal+=200; log(`${pl.name} отримує ${money(200)} за поле «ВПЕРЕД»`); S.cash(); save(); return setMode({k:'idle'});
     case 'jail':
-      if(!pl.jail) return toast(`${pl.name} isn't in Jail`);
-      G.undo=snap('Jail fee'); pl.jail=false; queuePay(pi,null,100,'Jail fee'); setMode({k:'idle'}); return runQueue();
+      if(!pl.jail) return toast(`${pl.name} не у В'язниці`);
+      G.undo=snap('вихід з В’язниці'); pl.jail=false; queuePay(pi,null,100,'вихід з В’язниці'); setMode({k:'idle'}); return runQueue();
     case 'loc':
-      if(pl.bal<100) return toast(`${pl.name} can't afford the Location fee`);
-      G.undo=snap('Location fee'); pl.bal-=100; log(`${pl.name} paid ${money(100)} to use Location`); S.cash(); save();
+      if(pl.bal<100) return toast(`${pl.name}: не вистачає грошей на Локацію`);
+      G.undo=snap('Локація'); pl.bal-=100; log(`${pl.name} сплачує ${money(100)} за Локацію`); S.cash(); save();
       return setMode({k:'locprop', pi});
-    case 'auctionPay': if(buy(pi,M.i,M.bid,'Auction')) setMode({k:'idle'}); else render(); return;
+    case 'auctionPay': if(buy(pi,M.i,M.bid,'Аукціон')) setMode({k:'idle'}); else render(); return;
     case 'event': return eventBank(pi);
     default: setMode({k:'balance', pi}, 6000);
   }
@@ -340,7 +373,7 @@ function onBank(pi){
 
 function onProp(i){
   S.beep();
-  if(G.phase!=='play') return toast(G.phase==='setup'?'Start the game first':'Game over');
+  if(G.phase!=='play') return toast(G.phase==='setup'?'Спершу почніть гру':'Гру завершено');
   if(G.debt) return surrender(i);
   if(M.k==='locprop') return setMode({k:'locbuy', pi:M.pi, i});
   if(M.k==='event') return eventProp(i);
@@ -349,24 +382,24 @@ function onProp(i){
 
 function bankOnProp(pi,i,viaMove){
   const pr=G.props[i], pl=G.players[pi];
-  if(pr.owner==null){ if(buy(pi,i,DEEDS[i].price,'Buy property')) setMode({k:'idle'}); else render(); return; }
-  if(pr.owner===pi){ if(!viaMove) G.undo=snap('Rent rise'); bump(i,1); log(`${pl.name} raised rent on ${pn(i)} to level ${pr.level}`); S.ok(); save(); return setMode({k:'idle'}); }
-  if(viaMove){ toast(`${pn(i)} belongs to ${pName(pr.owner)}. Nothing to do.`); return setMode({k:'idle'}); }
+  if(pr.owner==null){ if(buy(pi,i,DEEDS[i].price,'купівля')) setMode({k:'idle'}); else render(); return; }
+  if(pr.owner===pi){ if(!viaMove) G.undo=snap('підвищення оренди'); bump(i,1); log(`${pl.name}: оренда ${pn(i)} → рівень ${pr.level}`); S.ok(); save(); return setMode({k:'idle'}); }
+  if(viaMove){ toast(`${pn(i)} належить: ${pName(pr.owner)}. Нічого робити не треба.`); return setMode({k:'idle'}); }
   const owner=G.players[pr.owner];
-  if(owner.jail){ log(`${owner.name} is in Jail: no rent for ${pn(i)}`); toast(`${owner.name} is in Jail. No rent, no rent rise.`); return setMode({k:'idle'}); }
-  G.undo=snap('Rent');
+  if(owner.jail){ log(`${owner.name} у В'язниці: оренди за ${pn(i)} немає`); toast(`${owner.name} у В'язниці: ні оренди, ні підвищення.`); return setMode({k:'idle'}); }
+  G.undo=snap('оренда');
   let rent=rentOf(i);
-  if(G.cheap>0){ rent=DEEDS[i].rents[0]; G.cheap--; log(`Marathon: rent charged at level 1 (${G.cheap} left)`); }
-  bump(i,1); queuePay(pi,pr.owner,rent,`rent on ${pn(i)}`);
-  S.cash(); toast(`Move the house to level ${pr.level}`); setMode({k:'idle'}); runQueue();
+  if(G.cheap>0){ rent=DEEDS[i].rents[0]; G.cheap--; log(`Марафон: оренда за рівнем 1 (залишилось ${G.cheap})`); }
+  bump(i,1); queuePay(pi,pr.owner,rent,`оренда за «${pn(i)}»`);
+  S.cash(); toast(`Пересуньте будинок на рівень ${pr.level}`); setMode({k:'idle'}); runQueue();
 }
 
-/* ---------- events ---------- */
+/* ---------- події ---------- */
 function onEvent(e, code){
-  S.beep(); if(G.phase!=='play') return toast('Start the game first');
-  if(G.debt) return toast('Finish the debt first');
+  S.beep(); if(G.phase!=='play') return toast('Спершу почніть гру');
+  if(G.debt) return toast('Спершу закрийте борг');
   G.undo=null; const type=EVENTS[e][2];
-  if(type==='marathon'){ G.cheap=2; log(`${EVENTS[e][0]}: next 2 rents at level 1`); S.ok(); save(); }
+  if(type==='marathon'){ G.cheap=2; log(`${EVENTS[e][0]}: наступні 2 оренди за рівнем 1`); S.ok(); save(); }
   if(type==='move') return setMode({k:'locprop', pi:null, e, code});
   setMode({k:'event', e, type, code, step:0, picked:[]});
 }
@@ -374,70 +407,71 @@ function eventBank(pi){
   const ev=EVENTS[M.e], pl=G.players[pi];
   switch(M.type){
     case 'both':
-      if(M.picked.includes(pi)) return toast(`${pl.name} already collected`);
-      pl.bal+=ev[3]; M.picked.push(pi); log(`${pl.name} collected ${money(ev[3])} (${ev[0]})`); S.cash(); save();
+      if(M.picked.includes(pi)) return toast(`${pl.name}: вже отримано`);
+      pl.bal+=ev[3]; M.picked.push(pi); log(`${pl.name} отримує ${money(ev[3])} (${ev[0]})`); S.cash(); save();
       if(M.picked.length>=2) return setMode({k:'idle'}); return render();
-    case 'perProp': { const n=ownedBy(pi).length; queuePay(pi,null,ev[3]*n,`${ev[0]} (${n} properties)`); setMode({k:'idle'}); return runQueue(); }
-    case 'jail': pl.jail=true; log(`${pl.name} went to Jail (${ev[0]})`); S.bad(); save(); return setMode({k:'idle'});
-    default: return toast('This card needs a Title Deed, not a Bank card');
+    case 'perProp': { const n=ownedBy(pi).length; queuePay(pi,null,ev[3]*n,`${ev[0]} (${n} ${plural(n,'об’єкт','об’єкти','об’єктів')})`); setMode({k:'idle'}); return runQueue(); }
+    case 'jail': pl.jail=true; log(`${pl.name} іде до В'язниці (${ev[0]})`); S.bad(); save(); return setMode({k:'idle'});
+    default: return toast('Для цієї картки потрібна картка власності, а не Банківська');
   }
 }
 function eventProp(i){
   const ev=EVENTS[M.e], pr=G.props[i]; let hit=[];
   const owned = k => G.props[k].owner!=null;
+  const notOwned = () => toast(`${pn(i)} нікому не належить. Покажіть одну зі своїх карток власності.`);
   switch(M.type){
-    case 'groupUp': case 'groupDown': if(!owned(i)) return toast(`${pn(i)} isn't owned. Tap one of your properties.`);
+    case 'groupUp': case 'groupDown': if(!owned(i)) return notOwned();
       hit=groupOf(i).filter(owned); hit.forEach(k=>bump(k,M.type==='groupUp'?1:-1)); break;
     case 'sideUp': case 'sideDown':
       hit=sideOf(i).filter(owned); hit.forEach(k=>bump(k,M.type==='sideUp'?1:-1)); break;
-    case 'partyUp': if(!owned(i)) return toast(`${pn(i)} isn't owned. Tap one of your properties.`);
+    case 'partyUp': if(!owned(i)) return notOwned();
       bump(i,1); hit=[i]; neighbours(i).filter(owned).forEach(k=>{ if(k!==i){ bump(k,-1); hit.push(k); } }); break;
-    case 'max': if(!owned(i)) return toast(`${pn(i)} isn't owned. Tap one of your properties.`); setLevel(i,5); hit=[i]; break;
+    case 'max': if(!owned(i)) return notOwned(); setLevel(i,5); hit=[i]; break;
     case 'min': if(owned(i)){ setLevel(i,1); hit=[i]; } break;
     case 'swap':
-      if(!owned(i)) return toast(`${pn(i)} isn't owned by anyone`);
+      if(!owned(i)) return toast(`${pn(i)} нікому не належить`);
       if(!M.picked.length){ M.picked=[i]; S.ok(); return render(); }
-      { const a=M.picked[0]; if(G.props[a].owner===pr.owner) return toast('Pick a property owned by the other player');
+      { const a=M.picked[0]; if(G.props[a].owner===pr.owner) return toast('Покажіть власність іншого гравця');
         const oa=G.props[a].owner; G.props[a].owner=pr.owner; pr.owner=oa;
-        log(`${ev[0]}: ${pn(a)} ↔ ${pn(i)} swapped owners`); S.ok(); save(); toast('Swap the Title Deed cards'); return setMode({k:'idle'}); }
-    default: return toast('This card needs a Bank card, not a Title Deed');
+        log(`${ev[0]}: ${pn(a)} ↔ ${pn(i)}, власників обміняно`); S.ok(); save(); toast('Обміняйтеся картками власності'); return setMode({k:'idle'}); }
+    default: return toast('Для цієї картки потрібна Банківська картка, а не картка власності');
   }
-  log(hit.length?`${ev[0]}: ${hit.map(k=>`${pn(k)} → level ${G.props[k].level}`).join(', ')}`:`${ev[0]}: ${pn(i)} is unowned, nothing changes`);
-  S.ok(); save(); toast(hit.length?'Move the houses to the new levels':'Nothing changed'); setMode({k:'idle'});
+  log(hit.length?`${ev[0]}: ${hit.map(k=>`${pn(k)} → рівень ${G.props[k].level}`).join(', ')}`:`${ev[0]}: ${pn(i)} нікому не належить, нічого не змінилося`);
+  S.ok(); save(); toast(hit.length?'Пересуньте будинки на нові рівні':'Нічого не змінилося'); setMode({k:'idle'});
 }
 function fixEvent(code, newE){
-  // The scanned code belongs to a different Event card: swap mappings and remember it.
+  // Зчитаний код належить іншій картці «Подія»: міняємо відповідність і запам'ятовуємо.
   const oldId=CODES[code], newId='E'+(newE+1);
   const other=Object.keys(CODES).find(c=>CODES[c]===newId);
   CODES[code]=newId; if(other) CODES[other]=oldId;
   const fix=store.get('codefix',{}); fix[code]=newId; if(other) fix[other]=oldId; store.set('codefix',fix);
-  toast('Remembered. This card will read correctly from now on.');
+  toast('Запам’ятано. Тепер ця картка зчитуватиметься правильно.');
   onEvent(newE, code);
 }
 
-/* ---------- keys ---------- */
+/* ---------- кнопки ---------- */
 let auctionTimer=null;
 function key(k){
   S.tick();
   if(k==='exit'){ clearInterval(auctionTimer); return setMode({k:'idle'}); }
-  if(G.phase==='setup'){ toast('Tap Bank cards to join, then press Start'); return; }
+  if(G.phase==='setup'){ toast('Покажіть Банківські картки, щоб приєднатися, потім натисніть «Почати»'); return; }
   if(G.phase!=='play') return;
-  if(G.debt && k!=='undo') return toast('Finish the debt first');
+  if(G.debt && k!=='undo') return toast('Спершу закрийте борг');
   if(k==='go') return setMode({k:'go'}, 20000);
   if(k==='loc') return setMode({k:'loc'}, 20000);
   if(k==='jail') return setMode({k:'jail'}, 20000);
   if(k==='undo'){
-    if(G.debt || !G.undo) return toast('Nothing to cancel'); const u=G.undo;
-    G.players=u.players; G.props=u.props; G.bonus=u.bonus; G.cheap=u.cheap||0; G.undo=null; G.queue=[]; log(`Cancelled: ${u.label}`); S.ok(); save(); return setMode({k:'idle'});
+    if(G.debt || !G.undo) return toast('Немає що скасовувати'); const u=G.undo;
+    G.players=u.players; G.props=u.props; G.bonus=u.bonus; G.cheap=u.cheap||0; G.undo=null; G.queue=[]; log(`Скасовано: ${u.label}`); S.ok(); save(); return setMode({k:'idle'});
   }
   if(k==='auction'){
-    if(!(M.k==='prop'||M.k==='locbuy') || G.props[M.i].owner!=null) return toast('Tap an unowned Title Deed first');
+    if(!(M.k==='prop'||M.k==='locbuy') || G.props[M.i].owner!=null) return toast('Спершу покажіть картку вільної власності');
     return setMode({k:'auctionReady', i:M.i});
   }
   if(k==='bid'){
     if(M.k==='auctionReady') return startAuction();
     if(M.k==='auction'){ M.bid+=20; M.left=4; S.tick(); render(); return; }
-    return toast('Start an auction first');
+    return toast('Спершу почніть аукціон');
   }
 }
 function startAuction(){
@@ -447,104 +481,104 @@ function startAuction(){
     if(M.k!=='auction'){ clearInterval(auctionTimer); return; }
     M.left--; tone([M.left>0?520:260],.08);
     if(M.left<=0){ clearInterval(auctionTimer);
-      if(M.bid===0){ toast('No bids. Tap the Title Deed to restart, or Exit.'); return setMode({k:'idle'}); }
+      if(M.bid===0){ toast('Ставок немає. Покажіть картку власності ще раз або натисніть «Вихід».'); return setMode({k:'idle'}); }
       return setMode({k:'auctionPay', i:M.i, bid:M.bid}); }
     render();
   }, 1500);
 }
 
-/* ---------- rendering ---------- */
+/* ---------- екран ---------- */
 const sw = g => `<span class="swatch" style="background:var(${GROUPS[g]})"></span>`;
 function playersHtml(){
   return `<div class="players">${G.players.map(p=>p.joined?`<div class="pl ${p.out?'out':''} ${p.jail?'jail':''}"><span>${p.name}${p.jail?' ▣':''}</span><span>${money(p.bal)}</span></div>`:'').join('')}</div>`;
 }
 function levelsHtml(i){ const lv=G.props[i].level; return `<div class="lv">${DEEDS[i].rents.map((r,k)=>`<span class="${k+1===lv?'on':''}">${r}</span>`).join('')}</div>`; }
 function propHead(i){ const d=DEEDS[i]; return `<div class="uk">${sw(d.group)}${i+1}. ${esc(d.name)}</div>`; }
-function eventHead(e){ return `<div class="dim">EVENT</div><div class="uk">${esc(EVENTS[e][0])}</div><div>${esc(EVENTS[e][1])}</div>`; }
+function eventHead(e){ return `<div class="dim">ПОДІЯ</div><div class="uk">${esc(EVENTS[e][0])}</div><div class="txt">${esc(EVENTS[e][1])}</div>`; }
 function fixHtml(){
   if(!M.code) return '';
-  return `<details><summary class="dim" style="font-size:18px">Not the card in your hand?</summary>
-    <select id="evFix"><option value="">Choose the right card…</option>${EVENTS.map((e,k)=>`<option value="${k}">${esc(e[0])}</option>`).join('')}</select></details>`;
+  return `<details><summary class="dim" style="font-size:18px">Це не та картка, що у вас у руці?</summary>
+    <select id="evFix"><option value="">Оберіть правильну картку…</option>${EVENTS.map((e,k)=>`<option value="${k}">${esc(e[0])}</option>`).join('')}</select></details>`;
 }
 function render(){
   const L=$('#lcd'); let h='';
   if(G.phase==='setup'){
     const n=G.players.filter(p=>p.joined).length;
-    h=`<div class="big">NEW GAME</div><div>Show each player's Bank card to join.</div>
-      <div class="players">${G.players.map(p=>`<div class="pl" style="${p.joined?'':'opacity:.35'}"><span>${p.name}</span><span>${p.joined?'IN':'—'}</span></div>`).join('')}</div>
-      <div class="actions">${n>=2?`<button class="act" id="start">Start: ${n} players, ${money(1500)} each</button>`:`<span class="dim blink">Need at least 2 players</span>`}</div>`;
+    h=`<div class="big">НОВА ГРА</div><div class="txt">Покажіть Банківську картку кожного гравця, щоб приєднатися.</div>
+      <div class="players">${G.players.map(p=>`<div class="pl" style="${p.joined?'':'opacity:.35'}"><span>${p.name}</span><span>${p.joined?'ГРАЄ':'—'}</span></div>`).join('')}</div>
+      <div class="actions">${n>=2?`<button class="act" id="start">Почати: ${n} ${plural(n,'гравець','гравці','гравців')}, по ${money(1500)}</button>`:`<span class="dim blink">Потрібно щонайменше 2 гравці</span>`}</div>`;
   } else if(G.phase==='over'){
-    h=`<div class="big">WINNER: ${pName(G.winner[0]?.i)}</div>${G.winner.map((r,k)=>`<div>${k+1}. ${pName(r.i)} ${money(r.w)}</div>`).join('')}
-      <div class="dim">Money plus property at purchase price.</div>`;
+    h=`<div class="big">ПЕРЕМОЖЕЦЬ: ${pName(G.winner[0]?.i)}</div>${G.winner.map((r,k)=>`<div>${k+1}. ${pName(r.i)} ${money(r.w)}</div>`).join('')}
+      <div class="dim">Гроші плюс власність за ціною купівлі.</div>`;
   } else if(G.debt){
     const d=G.debt;
-    h=`<div class="big">IN DEBT</div><div>${pName(d.debtor)} owes ${pName(d.creditor)} ${money(d.remaining)} more.</div>
-      <div class="dim">Show ${pName(d.debtor)}'s Title Deeds to hand them over (${d.creditor==null?'they go back to the Bank: remove the house':'leave the house, give the card over'}).</div>
+    h=`<div class="big">БОРГ</div><div>${pName(d.debtor)} → ${pName(d.creditor)}: ще ${money(d.remaining)}</div>
+      <div class="txt">Покажіть картки власності гравця ${pName(d.debtor)}, щоб віддати їх (${d.creditor==null?'вони повертаються Банку: зніміть будинок':'залиште будинок і передайте картку'}).</div>
       <div class="actions">${ownedBy(d.debtor).map(i=>`<button class="act alt" data-surr="${i}">${esc(pn(i))} ${money(DEEDS[i].price)}</button>`).join('')}</div>`;
   } else switch(M.k){
     case 'prop': { const i=M.i, pr=G.props[i];
       h=propHead(i)+(pr.owner==null
-        ? `<div class="big">${money(DEEDS[i].price)}</div><div>Unowned. Show a Bank card to buy, or press Auction.</div>`
-        : `<div>${pName(pr.owner)} owns it. Rent level ${pr.level}.</div><div class="big">Rent ${money(G.cheap>0?DEEDS[i].rents[0]:rentOf(i))}</div>${levelsHtml(i)}
-           <div class="dim">Show the Bank card of whoever landed here. The owner's card raises the rent.</div>`)
-        +`<div class="blink dim">Waiting for a Bank card…</div>`; break; }
+        ? `<div class="big">${money(DEEDS[i].price)}</div><div class="txt">Нічия. Покажіть Банківську картку, щоб купити, або натисніть «Аукціон».</div>`
+        : `<div>Власник: ${pName(pr.owner)}. Рівень оренди ${pr.level}.</div><div class="big">Оренда ${money(G.cheap>0?DEEDS[i].rents[0]:rentOf(i))}</div>${levelsHtml(i)}
+           <div class="txt">Покажіть Банківську картку того, хто став на поле. Картка власника підвищує оренду.</div>`)
+        +`<div class="blink dim">Чекаю на Банківську картку…</div>`; break; }
     case 'balance': { const pi=M.pi;
-      h=`<div class="big">${pName(pi)}</div><div>Balance ${money(G.players[pi].bal)} · Wealth ${money(wealth(pi))}</div>
-        ${ownedBy(pi).map(i=>`<div>${sw(DEEDS[i].group)}${esc(pn(i))} · L${G.props[i].level} · ${money(rentOf(i))}</div>`).join('')||'<div class="dim">No properties yet</div>'}`; break; }
-    case 'go': h=`<div class="big">GO</div><div>Collect ${money(200)}.</div><div class="blink dim">Show your Bank card…</div>`; break;
-    case 'jail': h=`<div class="big">JAIL</div><div>Pay ${money(100)} to get out.</div><div class="blink dim">Show your Bank card…</div>`; break;
-    case 'loc': h=`<div class="big">LOCATION</div><div>Pay ${money(100)} and move to any property.</div><div class="blink dim">Show your Bank card…</div>`; break;
-    case 'locprop': h=(M.e!=null?eventHead(M.e):`<div class="big">LOCATION</div><div>${pName(M.pi)}: move your token.</div>`)
-      +`<div class="blink dim">Show the Title Deed of the property you moved to…</div>`+(M.e!=null?fixHtml():''); break;
-    case 'locbuy': { const i=M.i, pr=G.props[i], who=M.pi==null?'You':pName(M.pi);
-      h=propHead(i)+`<div>${pr.owner==null?`Buy for ${money(DEEDS[i].price)}, or press Auction.`:pr.owner===M.pi||M.pi==null?`If it's yours, your Bank card raises the rent to level ${Math.min(5,pr.level+1)}.`:`Owned by ${pName(pr.owner)}. Nothing to do.`}</div>
-        <div class="blink dim">${who}: show your Bank card, or press Exit to do nothing.</div>`; break; }
-    case 'auctionReady': h=propHead(M.i)+`<div class="big">AUCTION</div><div>Each press adds ${money(20)}. Say the amount out loud. Players in Jail can't bid.</div><div class="actions"><button class="act" data-k="bid">Start auction</button></div>`; break;
-    case 'auction': h=propHead(M.i)+`<div class="big">${money(M.bid)}</div><div>${'● '.repeat(M.left)}${'○ '.repeat(4-M.left)}</div><div class="actions"><button class="act" data-k="bid">+20 BID</button></div>`; break;
-    case 'auctionPay': h=propHead(M.i)+`<div class="big">SOLD ${money(M.bid)}</div><div class="blink dim">Winning bidder: show your Bank card…</div>`; break;
+      h=`<div class="big">${pName(pi)}</div><div>Рахунок ${money(G.players[pi].bal)} · Статки ${money(wealth(pi))}</div>
+        ${ownedBy(pi).map(i=>`<div>${sw(DEEDS[i].group)}${esc(pn(i))} · Р${G.props[i].level} · ${money(rentOf(i))}</div>`).join('')||'<div class="dim">Власності ще немає</div>'}`; break; }
+    case 'go': h=`<div class="big">ВПЕРЕД</div><div>Отримайте ${money(200)}.</div><div class="blink dim">Покажіть свою Банківську картку…</div>`; break;
+    case 'jail': h=`<div class="big">В'ЯЗНИЦЯ</div><div>Сплатіть ${money(100)}, щоб вийти.</div><div class="blink dim">Покажіть свою Банківську картку…</div>`; break;
+    case 'loc': h=`<div class="big">ЛОКАЦІЯ</div><div class="txt">Сплатіть ${money(100)} і перейдіть на будь-яке поле власності.</div><div class="blink dim">Покажіть свою Банківську картку…</div>`; break;
+    case 'locprop': h=(M.e!=null?eventHead(M.e):`<div class="big">ЛОКАЦІЯ</div><div>${pName(M.pi)}: перемістіть фішку.</div>`)
+      +`<div class="blink dim">Покажіть картку власності поля, на яке ви перейшли…</div>`+(M.e!=null?fixHtml():''); break;
+    case 'locbuy': { const i=M.i, pr=G.props[i], who=M.pi==null?'Гравцю':pName(M.pi);
+      h=propHead(i)+`<div class="txt">${pr.owner==null?`Купити за ${money(DEEDS[i].price)} або натиснути «Аукціон».`:pr.owner===M.pi||M.pi==null?`Якщо це ваша власність, ваша Банківська картка підвищить оренду до рівня ${Math.min(5,pr.level+1)}.`:`Власник: ${pName(pr.owner)}. Нічого робити не треба.`}</div>
+        <div class="blink dim">${who}: покажіть Банківську картку або натисніть «Вихід».</div>`; break; }
+    case 'auctionReady': h=propHead(M.i)+`<div class="big">АУКЦІОН</div><div class="txt">Кожне натискання додає ${money(20)}. Називайте суму вголос. Гравці у В'язниці не беруть участі.</div><div class="actions"><button class="act" data-k="bid">Почати аукціон</button></div>`; break;
+    case 'auction': h=propHead(M.i)+`<div class="big">${money(M.bid)}</div><div>${'● '.repeat(M.left)}${'○ '.repeat(4-M.left)}</div><div class="actions"><button class="act" data-k="bid">+20 СТАВКА</button></div>`; break;
+    case 'auctionPay': h=propHead(M.i)+`<div class="big">ПРОДАНО ${money(M.bid)}</div><div class="blink dim">Переможець аукціону: покажіть Банківську картку…</div>`; break;
     case 'event': {
       const t=M.type, needsBank=['both','perProp','jail'].includes(t);
       h=eventHead(M.e);
-      if(t==='none'||t==='marathon') h+=`<div class="actions"><button class="act" data-k="exit">Done</button></div>`;
-      else if(t==='swap') h+=`<div class="blink dim">${M.picked.length?`Got ${esc(pn(M.picked[0]))}. Now the other player's Title Deed…`:'Show your Title Deed…'}</div>`;
-      else if(t==='both') h+=`<div class="blink dim">${M.picked.length?`${pName(M.picked[0])} collected. Now the other player's Bank card…`:'Show the first Bank card…'}</div>`;
-      else h+=`<div class="blink dim">${needsBank?'Show the Bank card…':'Show the Title Deed…'}</div>`;
+      if(t==='none'||t==='marathon') h+=`<div class="actions"><button class="act" data-k="exit">Готово</button></div>`;
+      else if(t==='swap') h+=`<div class="blink dim">${M.picked.length?`Є: ${esc(pn(M.picked[0]))}. Тепер картку власності іншого гравця…`:'Покажіть свою картку власності…'}</div>`;
+      else if(t==='both') h+=`<div class="blink dim">${M.picked.length?`${pName(M.picked[0])} отримує гроші. Тепер Банківську картку іншого гравця…`:'Покажіть першу Банківську картку…'}</div>`;
+      else h+=`<div class="blink dim">${needsBank?'Покажіть Банківську картку…':'Покажіть картку власності…'}</div>`;
       h+=fixHtml(); break; }
     default:
-      h=`${playersHtml()}${G.cheap>0?`<div>Marathon: next ${G.cheap} rent${G.cheap>1?'s':''} at level 1</div>`:''}<div class="dim">Show a card, or press GO, Location or Jail.</div>`;
+      h=`${playersHtml()}${G.cheap>0?`<div>Марафон: ще ${G.cheap} ${plural(G.cheap,'оренда','оренди','оренд')} за рівнем 1</div>`:''}<div class="dim">Покажіть картку або натисніть ВПЕРЕД, Локація чи В'язниця.</div>`;
   }
   L.innerHTML=h;
   const st=$('#start'); if(st) st.onclick=startGame;
   L.querySelectorAll('[data-surr]').forEach(b=>b.onclick=()=>surrender(+b.dataset.surr));
   L.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>key(b.dataset.k));
   const fx=$('#evFix'); if(fx) fx.onchange=()=>{ if(fx.value!=='') fixEvent(M.code, +fx.value); };
-  $('#log').innerHTML=G.log.map(t=>`<div>${esc(t)}</div>`).join('')||'<div>No activity yet.</div>';
+  $('#log').innerHTML=G.log.map(t=>`<div>${esc(t)}</div>`).join('')||'<div>Подій ще немає.</div>';
   renderJail();
 }
 function renderJail(){
   const box=$('#jailctl');
-  if(G.phase!=='play'){ box.innerHTML='<span class="note">Available once the game starts.</span>'; return; }
+  if(G.phase!=='play'){ box.innerHTML='<span class="note">Доступно після початку гри.</span>'; return; }
   box.innerHTML=active().map(i=>{const p=G.players[i]; return p.jail
-    ? `<button class="btn ghost" data-free="${i}">${p.name}: rolled a double, free</button>`
-    : `<button class="btn ghost" data-jail="${i}">Send ${p.name} to Jail</button>`;}).join('');
-  box.querySelectorAll('[data-jail]').forEach(b=>b.onclick=()=>{G.players[+b.dataset.jail].jail=true; log(`${pName(+b.dataset.jail)} went to Jail`); S.bad(); save(); render();});
-  box.querySelectorAll('[data-free]').forEach(b=>b.onclick=()=>{G.players[+b.dataset.free].jail=false; log(`${pName(+b.dataset.free)} rolled a double and left Jail`); S.ok(); save(); render();});
+    ? `<button class="btn ghost" data-free="${i}">${p.name}: дубль, вийти з В'язниці</button>`
+    : `<button class="btn ghost" data-jail="${i}">${p.name}: до В'язниці</button>`;}).join('');
+  box.querySelectorAll('[data-jail]').forEach(b=>b.onclick=()=>{G.players[+b.dataset.jail].jail=true; log(`${pName(+b.dataset.jail)} іде до В'язниці`); S.bad(); save(); render();});
+  box.querySelectorAll('[data-free]').forEach(b=>b.onclick=()=>{G.players[+b.dataset.free].jail=false; log(`${pName(+b.dataset.free)}: дубль, вихід з В'язниці`); S.ok(); save(); render();});
 }
 function startGame(){
-  G.players.forEach(p=>{ if(p.joined) p.bal=1500; }); G.phase='play'; log(`Game started. Everyone gets ${money(1500)}.`); S.cash(); save(); setMode({k:'idle'});
+  G.players.forEach(p=>{ if(p.joined) p.bal=1500; }); G.phase='play'; log(`Гру розпочато. Кожен отримує ${money(1500)}.`); S.cash(); save(); setMode({k:'idle'});
 }
 
-/* ---------- manual cards & setup ---------- */
+/* ---------- ручні картки та налаштування ---------- */
 function renderManual(){
-  const b=[...TOKENS.map((t,i)=>`<button class="cardbtn" data-c="B${i+1}"><i style="background:var(--fg)"></i>${t} · Bank</button>`),
+  const b=[...TOKENS.map((t,i)=>`<button class="cardbtn" data-c="B${i+1}"><i style="background:var(--fg)"></i>${t} · Банк</button>`),
     ...DEEDS.map((d,i)=>`<button class="cardbtn" data-c="P${i+1}"><i style="background:var(${GROUPS[d.group]})"></i>${i+1}. ${esc(d.name)}</button>`),
     ...EVENTS.map((e,i)=>`<button class="cardbtn" data-c="E${i+1}"><i style="background:var(--muted)"></i>${esc(e[0])}</button>`)];
   $('#manual').innerHTML=b.join('');
   $('#manual').querySelectorAll('[data-c]').forEach(x=>x.onclick=()=>onCard(x.dataset.c));
 }
 function renderDeeds(){
-  $('#deeds').innerHTML=`<tr><th>#</th><th>Property</th><th>Price</th>${[1,2,3,4,5].map(n=>`<th>L${n}</th>`).join('')}</tr>`+
-    DEEDS.map((d,i)=>`<tr><td>${i+1}</td><td>${sw(d.group)}${esc(d.name)}<br><span class="note">${esc(d.en)}</span></td><td><input id="pr${i}" type="number" step="10" value="${d.price}"></td>
+  $('#deeds').innerHTML=`<tr><th>#</th><th>Власність</th><th>Ціна</th>${[1,2,3,4,5].map(n=>`<th>Р${n}</th>`).join('')}</tr>`+
+    DEEDS.map((d,i)=>`<tr><td>${i+1}</td><td>${sw(d.group)}${esc(d.name)}</td><td><input id="pr${i}" type="number" step="10" value="${d.price}"></td>
       ${d.rents.map((r,k)=>`<td><input id="r${i}_${k}" type="number" step="10" value="${r}"></td>`).join('')}</tr>`).join('');
   $('#deeds').oninput=e=>{ const id=e.target.id; let m;
     if(m=/^pr(\d+)$/.exec(id)) DEEDS[+m[1]].price=+e.target.value||0;
@@ -662,8 +696,8 @@ function decodeFrameGray(g,W,H,raw){
   return decodeGray(t,H,W,raw);
 }
 
-/* ---------- camera ---------- */
-const cardName = id => { const t=id[0], n=+id.slice(1)-1; return t==='B'?`${TOKENS[n]} Bank card`:t==='P'?`${n+1}. ${DEEDS[n].name}`:EVENTS[n][0]; };
+/* ---------- камера ---------- */
+const cardName = id => { const t=id[0], n=+id.slice(1)-1; return t==='B'?`${TOKENS[n]} · Банківська картка`:t==='P'?`${n+1}. ${DEEDS[n].name}`:EVENTS[n][0]; };
 let stream=null, scanning=false, lastSeen=null, seenCount=0, missCount=0, fired=null;
 const work=document.createElement('canvas'), wx=work.getContext('2d',{willReadFrequently:true});
 const GUIDE={x:.08,y:.12,w:.84,h:.76};
@@ -681,19 +715,20 @@ function grabGray(deg){
   for(let i=0;i<W*H;i++) g[i]=d[i*4+3]<255?255:(d[i*4]*77+d[i*4+1]*150+d[i*4+2]*29)>>8;   // corners left empty by rotation count as white
   return {g,W,H};
 }
+const CAM_OFF='Торкніться, щоб увімкнути зчитувач карток';
 async function startCam(){
-  if(!navigator.mediaDevices?.getUserMedia){ $('#camoff').textContent='The camera needs an HTTPS page. Use the manual buttons below.'; return; }
+  if(!navigator.mediaDevices?.getUserMedia){ $('#camoff').textContent='Камері потрібна сторінка HTTPS. Скористайтеся кнопками нижче.'; return; }
   try{
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
     const v=$('#vid'); v.srcObject=stream; await v.play(); $('#camoff').hidden=true;
     const tr=stream.getVideoTracks()[0]; $('#btnTorch').hidden=!(tr.getCapabilities?.().torch);
     scanning=true; loop(); store.set('cam',true);
     try{ await navigator.wakeLock?.request('screen'); }catch(e){}
-  }catch(e){ $('#camoff').textContent='Camera blocked. Allow camera access, or use the manual buttons.'; }
+  }catch(e){ $('#camoff').textContent='Камеру заблоковано. Дозвольте доступ до камери або скористайтеся кнопками нижче.'; }
 }
-function stopCam(){ scanning=false; stream?.getTracks().forEach(t=>t.stop()); stream=null; $('#camoff').hidden=false; $('#camoff').textContent='Tap to start the card reader'; store.set('cam',false); }
+function stopCam(){ scanning=false; stream?.getTracks().forEach(t=>t.stop()); stream=null; $('#camoff').hidden=false; $('#camoff').textContent=CAM_OFF; store.set('cam',false); }
 let torch=false;
-async function toggleTorch(){ try{ torch=!torch; await stream.getVideoTracks()[0].applyConstraints({advanced:[{torch}]}); $('#btnTorch').textContent=torch?'Light on':'Light'; }catch(e){ toast('This camera has no light control'); } }
+async function toggleTorch(){ try{ torch=!torch; await stream.getVideoTracks()[0].applyConstraints({advanced:[{torch}]}); $('#btnTorch').textContent=torch?'Світло увімк.':'Світло'; }catch(e){ toast('Ця камера не має підсвітки'); } }
 // Try the angle that worked last time, then one other angle per frame, so tilted cards still read.
 const ANGLES=[0,4,-4,8,-8]; let angleIx=0, tryIx=1;
 function readFrame(){
@@ -719,17 +754,26 @@ function loop(){
   }
   setTimeout(()=>requestAnimationFrame(loop),90);
 }
+// iOS stops the camera when the app goes to the background; restart it on return.
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && store.get('cam',false) && (!stream || stream.getVideoTracks().every(t=>t.readyState==='ended'))){ stream=null; startCam(); }
+});
 
-/* ---------- wire up ---------- */
+/* ---------- запуск ---------- */
 $('#keys').onclick=e=>{ const b=e.target.closest('[data-k]'); if(b) key(b.dataset.k); };
 $('#reader').onclick=()=>{ if(!stream) startCam(); };
 $('#btnCam').onclick=()=>stream?stopCam():startCam();
 $('#btnTorch').onclick=toggleTorch;
-const syncSound=()=>$('#btnSound').textContent=soundOn?'Sound on':'Sound off';
+const syncSound=()=>$('#btnSound').textContent=soundOn?'Звук увімк.':'Звук вимк.';
 $('#btnSound').onclick=()=>{ soundOn=!soundOn; store.set('sound',soundOn); syncSound(); S.ok(); };
 $('#btnNew').onclick=()=>{ $('#confirmNew').hidden=false; };
 $('#btnNewNo').onclick=()=>{ $('#confirmNew').hidden=true; };
 $('#btnNewYes').onclick=()=>{ G=freshGame(); $('#confirmNew').hidden=true; save(); setMode({k:'idle'}); };
+// Show the "Add to Home Screen" hint on iPad/iPhone Safari when not already installed.
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const installed=navigator.standalone===true || matchMedia('(display-mode: standalone)').matches;
+$('#installHint').hidden=!(isIOS && !installed);
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 syncSound(); renderManual(); renderDeeds(); render();
 if(store.get('cam',false)) startCam();
 </script>

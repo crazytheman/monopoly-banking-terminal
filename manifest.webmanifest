@@ -1,0 +1,17 @@
+{
+  "name": "Банківський термінал",
+  "short_name": "Термінал",
+  "description": "Зчитувач карток для Монополії «Банк без меж»",
+  "lang": "uk",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#b3121f",
+  "theme_color": "#b3121f",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
