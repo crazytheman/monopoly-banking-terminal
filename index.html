@@ -50,6 +50,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .chip{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:600}
 .reader{position:relative;width:100%;aspect-ratio:16/10;max-height:46vh;border-radius:14px;overflow:hidden;background:#000}
 .reader video{width:100%;height:100%;object-fit:cover;display:block}
+.reader.front video{transform:scaleX(-1)}   /* mirror the preview like a selfie camera; reading uses the unmirrored frame */
 .reader .frame{position:absolute;left:8%;top:12%;width:84%;height:76%;border:2px dashed rgba(255,255,255,.8);border-radius:8px;pointer-events:none;box-shadow:0 0 0 999px rgba(0,0,0,.28)}
 .reader.hit .frame{border:3px solid #6cff8a}
 .reader .off{position:absolute;inset:0;display:grid;place-items:center;color:#fff;text-align:center;font-size:14px;padding:16px}
@@ -103,6 +104,7 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
     <div class="top">
       <div class="brand"><h1>Банківський термінал</h1>
         <button class="chip" id="btnCam">Камера</button>
+        <button class="chip" id="btnFlip">Фронтальна</button>
         <button class="chip" id="btnTorch" hidden>Світло</button>
         <button class="chip" id="btnSound">Звук увімк.</button>
       </div>
@@ -719,14 +721,23 @@ const CAM_OFF='Торкніться, щоб увімкнути зчитувач 
 async function startCam(){
   if(!navigator.mediaDevices?.getUserMedia){ $('#camoff').textContent='Камері потрібна сторінка HTTPS. Скористайтеся кнопками нижче.'; return; }
   try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:720}},audio:false});
+    $('#reader').classList.toggle('front', facing==='user');
     const v=$('#vid'); v.srcObject=stream; await v.play(); $('#camoff').hidden=true;
     const tr=stream.getVideoTracks()[0]; $('#btnTorch').hidden=!(tr.getCapabilities?.().torch);
-    scanning=true; loop(); store.set('cam',true);
+    scanning=true; loop(++loopGen); store.set('cam',true);
     try{ await navigator.wakeLock?.request('screen'); }catch(e){}
   }catch(e){ $('#camoff').textContent='Камеру заблоковано. Дозвольте доступ до камери або скористайтеся кнопками нижче.'; }
 }
 function stopCam(){ scanning=false; stream?.getTracks().forEach(t=>t.stop()); stream=null; $('#camoff').hidden=false; $('#camoff').textContent=CAM_OFF; store.set('cam',false); }
+// Back or front camera; the choice is remembered on this device.
+let facing=store.get('facing','environment');
+const syncFlip=()=>$('#btnFlip').textContent=facing==='user'?'Задня':'Фронтальна';
+async function flipCam(){
+  facing = facing==='user' ? 'environment' : 'user'; store.set('facing',facing); syncFlip();
+  if(stream){ scanning=false; stream.getTracks().forEach(t=>t.stop()); stream=null; await startCam(); }
+  toast(facing==='user'?'Фронтальна камера':'Задня камера');
+}
 let torch=false;
 async function toggleTorch(){ try{ torch=!torch; await stream.getVideoTracks()[0].applyConstraints({advanced:[{torch}]}); $('#btnTorch').textContent=torch?'Світло увімк.':'Світло'; }catch(e){ toast('Ця камера не має підсвітки'); } }
 // Try the angle that worked last time, then one other angle per frame, so tilted cards still read.
@@ -738,8 +749,9 @@ function readFrame(){
     const g=grabGray(ANGLES[tryIx]); code=g&&decodeFrameGray(g.g,g.W,g.H); if(code) angleIx=tryIx; }
   return {f, code};
 }
-function loop(){
-  if(!scanning) return;
+let loopGen=0;   // one reading loop at a time, even after switching cameras
+function loop(gen){
+  if(!scanning || gen!==loopGen) return;
   const {f,code}=readFrame();
   if(f){
     if(code){
@@ -752,7 +764,7 @@ function loop(){
       }
     } else if(++missCount>=4){ fired=null; lastSeen=null; seenCount=0; }
   }
-  setTimeout(()=>requestAnimationFrame(loop),90);
+  setTimeout(()=>requestAnimationFrame(()=>loop(gen)),90);
 }
 // iOS stops the camera when the app goes to the background; restart it on return.
 document.addEventListener('visibilitychange',()=>{
@@ -764,6 +776,7 @@ $('#keys').onclick=e=>{ const b=e.target.closest('[data-k]'); if(b) key(b.datase
 $('#reader').onclick=()=>{ if(!stream) startCam(); };
 $('#btnCam').onclick=()=>stream?stopCam():startCam();
 $('#btnTorch').onclick=toggleTorch;
+$('#btnFlip').onclick=flipCam;
 const syncSound=()=>$('#btnSound').textContent=soundOn?'Звук увімк.':'Звук вимк.';
 $('#btnSound').onclick=()=>{ soundOn=!soundOn; store.set('sound',soundOn); syncSound(); S.ok(); };
 $('#btnNew').onclick=()=>{ $('#confirmNew').hidden=false; };
@@ -774,7 +787,7 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform=
 const installed=navigator.standalone===true || matchMedia('(display-mode: standalone)').matches;
 $('#installHint').hidden=!(isIOS && !installed);
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
-syncSound(); renderManual(); renderDeeds(); render();
+syncSound(); syncFlip(); renderManual(); renderDeeds(); render();
 if(store.get('cam',false)) startCam();
 </script>
 </body>
