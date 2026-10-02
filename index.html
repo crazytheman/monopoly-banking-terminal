@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#b3121f">
+<title>Banking Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=VT323&display=swap">
+<style>
+/* Layout: one phone-height "unit": camera card reader on top, LCD screen in the middle, chunky keys at the bottom. */
+:root{
+  --shell:#b3121f; --shell-dk:#7d0b15; --lcd:#c9d6c3; --lcd-ink:#1f2b1c; --lcd-dim:#5d6e58;
+  --key:#f4f4f2; --key-ink:#1d1d1f; --bg:#eceae6; --fg:#1d1d1f; --muted:#6b6862; --line:#d3d0ca;
+  --c-brown:#6b4a2f; --c-lblue:#9fd3ef; --c-pink:#e0399a; --c-orange:#f08a1c; --c-red:#e0242f; --c-yellow:#f5d90a; --c-green:#1f9d55; --c-dblue:#1d4fd3;
+  --font-lcd:"VT323", ui-monospace, "Consolas", monospace;
+  --font-ui:"Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#17171a; --fg:#ecebe8; --muted:#a19d96; --line:#33323a; --key:#2a2a30; --key-ink:#f0efec;
+  --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17171a; --fg:#ecebe8; --muted:#a19d96; --line:#33323a; --key:#2a2a30; --key-ink:#f0efec;
+  --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 var(--font-ui);-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #2a7de1;outline-offset:2px}
+.wrap{max-width:520px;margin:0 auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:12px}
+.unit{background:var(--shell);border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:12px;box-shadow:inset 0 -6px 0 var(--shell-dk)}
+.top{display:flex;flex-direction:column;gap:8px}
+.brand{display:flex;gap:8px;align-items:center;color:#fff;flex-wrap:wrap}
+.brand h1{margin:0;font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;flex:1 1 auto}
+.chip{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:600}
+.reader{position:relative;width:100%;aspect-ratio:16/10;max-height:46vh;border-radius:14px;overflow:hidden;background:#000}
+.reader video{width:100%;height:100%;object-fit:cover;display:block}
+.reader .frame{position:absolute;left:8%;top:12%;width:84%;height:76%;border:2px dashed rgba(255,255,255,.8);border-radius:8px;pointer-events:none;box-shadow:0 0 0 999px rgba(0,0,0,.28)}
+.reader.hit .frame{border:3px solid #6cff8a}
+.reader .off{position:absolute;inset:0;display:grid;place-items:center;color:#fff;text-align:center;font-size:14px;padding:16px}
+.rstat{color:#fff;font-size:12px;min-height:18px;overflow-wrap:anywhere}
+.lcd{background:var(--lcd);color:var(--lcd-ink);border-radius:12px;padding:12px 14px;min-height:230px;font-family:var(--font-lcd);font-size:24px;line-height:1.1;box-shadow:inset 0 3px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:8px}
+.lcd .big{font-size:38px;line-height:1}
+.lcd .dim{color:var(--lcd-dim)}
+.lcd .uk{font-family:var(--font-ui);font-weight:800;font-size:18px;line-height:1.2}
+.lcd .blink{animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:.2}}
+@media (prefers-reduced-motion:reduce){.lcd .blink{animation:none}}
+.lcd select{font:16px var(--font-ui);padding:6px;border-radius:6px;border:2px solid var(--lcd-ink);background:var(--lcd);color:var(--lcd-ink);max-width:100%}
+.players{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pl{border:2px solid var(--lcd-ink);border-radius:6px;padding:4px 8px;display:flex;justify-content:space-between;gap:6px;font-variant-numeric:tabular-nums}
+.pl.out{opacity:.35;text-decoration:line-through}
+.pl.jail{border-style:dashed}
+.swatch{display:inline-block;width:.8em;height:.8em;border:2px solid var(--lcd-ink);vertical-align:-1px;margin-right:4px}
+.lv{display:flex;gap:4px}
+.lv span{flex:1;border:2px solid var(--lcd-ink);text-align:center;padding:2px 0;font-variant-numeric:tabular-nums;font-size:20px}
+.lv span.on{background:var(--lcd-ink);color:var(--lcd)}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.key{background:var(--key);color:var(--key-ink);border:0;border-radius:12px;padding:12px 4px;font-weight:800;font-size:13px;box-shadow:0 4px 0 rgba(0,0,0,.35);min-height:54px}
+.key:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.key.wide{grid-column:span 2}
+.key.go{background:#ffd23f;color:#1d1d1f}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.act{flex:1 1 auto;background:var(--lcd-ink);color:var(--lcd);border:0;border-radius:8px;padding:10px 12px;font-family:var(--font-lcd);font-size:22px}
+.act.alt{background:transparent;color:var(--lcd-ink);border:2px solid var(--lcd-ink)}
+.panel{background:var(--key);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.panel h2{margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+.cardbtn{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:6px;font-size:12px;text-align:left;min-height:44px;display:flex;gap:6px;align-items:center}
+.cardbtn i{flex:0 0 8px;align-self:stretch;border-radius:3px}
+.log{font-size:13px;color:var(--muted);max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums}
+details summary{cursor:pointer;font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+td,th{padding:4px;border-bottom:1px solid var(--line);text-align:left}
+td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg);font:inherit}
+.tablewrap{overflow-x:auto}
+.btn{background:var(--fg);color:var(--bg);border:0;border-radius:8px;padding:9px 12px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.note{font-size:13px;color:var(--muted);margin:0}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 14px;border-radius:10px;font-weight:600;max-width:90vw;z-index:9}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="unit">
+    <div class="top">
+      <div class="brand"><h1>Banking Terminal</h1>
+        <button class="chip" id="btnCam">Camera</button>
+        <button class="chip" id="btnTorch" hidden>Light</button>
+        <button class="chip" id="btnSound">Sound on</button>
+      </div>
+      <div class="reader" id="reader"><video id="vid" playsinline muted></video><div class="frame"></div><div class="off" id="camoff">Tap to start the card reader</div></div>
+      <div class="rstat" id="rstat">Show the white bar-code strip of a card inside the box.</div>
+    </div>
+    <div class="lcd" id="lcd" aria-live="polite"></div>
+    <div class="keys" id="keys">
+      <button class="key go" data-k="go">GO<br>+200</button>
+      <button class="key" data-k="loc">Location<br>−100</button>
+      <button class="key" data-k="jail">Jail<br>−100</button>
+      <button class="key" data-k="exit">✖ Exit</button>
+      <button class="key" data-k="auction">Auction</button>
+      <button class="key" data-k="bid">+20 Bid</button>
+      <button class="key wide" data-k="undo">Cancel last</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Tap a card manually</h2>
+    <p class="note">Use this if the camera can't read a card. It does the same thing as scanning.</p>
+    <div class="cards" id="manual"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Players &amp; jail</h2>
+    <div id="jailctl" class="actions"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Activity</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Set up</h2>
+    <details><summary>Title Deeds (prices and rents)</summary>
+      <p class="note">Rents are copied from your Title Deed cards and prices from your board.</p>
+      <div class="tablewrap"><table id="deeds"></table></div>
+    </details>
+    <div class="actions">
+      <button class="btn ghost" id="btnNew">New game</button>
+    </div>
+    <div id="confirmNew" class="actions" hidden>
+      <span class="note" style="flex-basis:100%">Wipe balances and ownership and start a new game?</span>
+      <button class="btn" id="btnNewYes">Yes, new game</button>
+      <button class="btn ghost" id="btnNewNo">Keep playing</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ---------- static data (Ukrainian edition, read from the real cards) ---------- */
+const CUR='₼';
+const TOKENS = ['Car','Helicopter','Ship','Jet'];           // Bank cards 0001..0004
+const GROUPS = {brown:'--c-brown',lblue:'--c-lblue',pink:'--c-pink',orange:'--c-orange',red:'--c-red',yellow:'--c-yellow',green:'--c-green',dblue:'--c-dblue'};
+const BASE_PROPS = [ // [name on card, English, group, price, rents L1..L5]
+ ['Києво-Печерська лавра','Kyiv Pechersk Lavra','brown',60,[70,130,220,370,750]],
+ ['Батьківщина-Мати','Motherland Monument','brown',60,[70,130,220,370,750]],
+ ['Пізанська вежа','Leaning Tower of Pisa','lblue',100,[80,140,240,410,800]],
+ ['Венеція','Venice','lblue',100,[80,140,240,410,800]],
+ ['Колізей','Colosseum','lblue',120,[100,160,260,440,860]],
+ ['Тріумфальна арка','Arc de Triomphe','pink',140,[110,180,290,460,900]],
+ ['Єлисейські поля','Champs-Élysées','pink',140,[110,180,290,460,900]],
+ ['Ейфелева вежа','Eiffel Tower','pink',160,[130,200,310,490,980]],
+ ['Співаючі фонтани','Dubai Fountain','orange',180,[140,210,330,520,1000]],
+ ['Острови Пальм','Palm Islands','orange',180,[140,210,330,520,1000]],
+ ['Бурдж-Халіфа','Burj Khalifa','orange',200,[160,230,350,550,1100]],
+ ['Октоберфест','Oktoberfest','red',220,[170,250,380,580,1160]],
+ ['Бундестаг','Bundestag','red',220,[170,250,380,580,1160]],
+ ['Бранденбурзькі ворота','Brandenburg Gate','red',240,[190,270,400,610,1200]],
+ ['Оксфордський університет','Oxford University','yellow',260,[200,280,420,640,1300]],
+ ['Стадіон Уемблі','Wembley Stadium','yellow',260,[200,280,420,640,1300]],
+ ['Біг-Бен','Big Ben','yellow',280,[220,300,440,670,1340]],
+ ['Шанхай','Shanghai','green',300,[230,320,460,700,1400]],
+ ['Великий Китайський мур','Great Wall of China','green',300,[230,320,460,700,1400]],
+ ['Гонконг','Hong Kong','green',320,[250,340,480,730,1440]],
+ ['Голлівуд','Hollywood','dblue',350,[270,360,510,740,1500]],
+ ['Волл-стріт','Wall Street','dblue',400,[300,400,560,810,1600]]];
+const SIDES = [[0,4],[5,10],[11,16],[17,21]]; // property index ranges per side of the board
+// Event cards: type drives what the terminal waits for next.
+const EVENTS = [
+ ['Добрі справи!','Choose another player. Both tap your Bank cards: you each get '+CUR+'200.','both',200],
+ ['Місто зростає!','Move to any property. Tap its Title Deed, then buy it, auction it or raise its rent +1.','move'],
+ ['Дом з привидами','Choose another player and swap one property each. Tap your Title Deed, then theirs.','swap'],
+ ['Безпечне місто','Tap one of your Title Deeds: rent for that whole colour set +1.','groupUp'],
+ ['Метелики у животі','Choose another player. Both tap your Bank cards: you each get '+CUR+'200.','both',200],
+ ['Пакуй валізи','Tap one of your Title Deeds: rent for that whole colour set +1.','groupUp'],
+ ['Паті на хаті','Tap one of your Title Deeds: its rent +1, its neighbours −1.','partyUp'],
+ ['Великий куш','Tap one of your Title Deeds: its rent goes to level 5.','max'],
+ ['Дорожній збір','Tap your Bank card: pay '+CUR+'50 for each property you own.','perProp',50],
+ ['Затор на дорозі','Everyone moves to Free Parking. Don\'t pass GO. Anyone in Jail stays there.','none'],
+ ['Мані на кармані','Swap any of your properties for another player\'s. Tap your Title Deed, then theirs.','swap'],
+ ['Поверніть своє','Send another player to Jail: tap their Bank card.','jail'],
+ ['Сезон застуд','Tap one of your Title Deeds: rent for that whole colour set −1.','groupDown'],
+ ['Що смердить?!','Tap one of your Title Deeds: rent on that side of the board −1.','sideDown'],
+ ['Біжи, друже... біжи','The next two rent payments are charged at level 1.','marathon'],
+ ['Будівля знесена','Tap any Title Deed: its rent drops to level 1.','min'],
+ ['Це хлопчик!','Tap one of your Title Deeds: its rent +1, its neighbours −1.','partyUp'],
+ ['Угода тижня','Move to any property. Tap its Title Deed, then buy it, auction it or raise its rent +1.','move'],
+ ['Помста Бобіка','Tap any Title Deed: its rent drops to level 1.','min'],
+ ['Несподіваний ураган','Tap any Title Deed: its rent drops to level 1.','min'],
+ ['Скандали. Інтриги. Розслідування','Move to any property. Tap its Title Deed, then buy it, auction it or raise its rent +1.','move'],
+ ['У нас на районі зірка','Tap one of your Title Deeds: rent for that whole colour set +1.','groupUp'],
+ ['Прокатись з вітерцем','Tap any Title Deed: rent on that side of the board +1.','sideUp']];
+// Bar codes read from the cards. 5 slots, the middle one is the wide marker; '.' empty, L/R = bar position in the slot.
+const BASE_CODES = {
+ '..R.R':'B1','..L.L':'B2','..RR.':'B3','..LRR':'B4',
+ '.RR..':'P1','.RL.R':'P2','.RR.L':'P3','.RLR.':'P4','.RRRR':'P5','.RLRL':'P6','.RRL.':'P7','.RLLR':'P8','.RRLL':'P9',
+ '.LL..':'P10','.LR.R':'P11','.LL.L':'P12','.LRR.':'P13','.LLRR':'P14','.LRRL':'P15','.LLL.':'P16','.LRLR':'P17','.LLLL':'P18',
+ 'R.R..':'P19','R.L.R':'P20','R.R.L':'P21','R.LR.':'P22',
+ 'L.LLL':'E1','L.RR.':'E2','L.RLR':'E3','RLLRL':'E4','LRR..':'E5','LRLRL':'E6','RLLLR':'E7','RLR..':'E8',
+ 'LRL.R':'E9','LRLR.':'E10','L.LL.':'E11','LRR.L':'E12','LRRRR':'E13','L.L..':'E14','L.L.L':'E15','RLR.L':'E16',
+ 'RLRL.':'E17','L.RRL':'E18','RLLR.':'E19','RLL..':'E20','L.LRR':'E21','RLRRR':'E22','RLRLL':'E23'};
+
+/* ---------- storage ---------- */
+const store = {
+  get(k,d){try{const v=localStorage.getItem('mub2:'+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem('mub2:'+k,JSON.stringify(v))}catch(e){}}
+};
+let DEEDS = store.get('deeds', null) || BASE_PROPS.map(([name,en,group,price,rents])=>({name,en,group,price,rents:[...rents]}));
+let CODES = {...BASE_CODES, ...store.get('codefix', {})};
+const freshGame = () => ({phase:'setup', players:TOKENS.map(t=>({name:t,joined:false,bal:0,jail:false,out:false})),
+  props:DEEDS.map(()=>({owner:null,level:0})), bonus:{}, cheap:0, queue:[], debt:null, undo:null, log:[], winner:null});
+let G = store.get('game', null) || freshGame();
+const save = () => {store.set('game',G); store.set('deeds',DEEDS)};
+
+/* ---------- transient terminal mode ---------- */
+let M = {k:'idle'}; let modeTimer = null;
+function setMode(m, timeoutMs){ M=m; clearTimeout(modeTimer); if(timeoutMs) modeTimer=setTimeout(()=>{M={k:'idle'};render()},timeoutMs); render(); }
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const money = n => CUR+Math.round(n).toLocaleString('uk-UA');
+const pName = i => i==null ? 'Bank' : G.players[i].name;
+const active = () => G.players.map((p,i)=>i).filter(i=>G.players[i].joined && !G.players[i].out);
+const rentOf = i => DEEDS[i].rents[Math.max(0,G.props[i].level-1)];
+const ownedBy = pi => G.props.map((p,i)=>i).filter(i=>G.props[i].owner===pi);
+const wealth = pi => G.players[pi].bal + ownedBy(pi).reduce((s,i)=>s+DEEDS[i].price,0);
+const pn = i => DEEDS[i].name;
+function log(t){ G.log.unshift(t); G.log.length=Math.min(G.log.length,80); }
+const snap = label => ({label, players:JSON.parse(JSON.stringify(G.players)), props:JSON.parse(JSON.stringify(G.props)), bonus:{...G.bonus}, cheap:G.cheap});
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- sound ---------- */
+let AC=null, soundOn = store.get('sound', true);
+function tone(freqs, dur=.09, type='square'){
+  if(!soundOn) return; try{ AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+  let t=AC.currentTime; for(const f of freqs){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+dur);t+=dur;} }catch(e){}
+}
+const S = {beep:()=>tone([1320]), ok:()=>tone([880,1320],.08), cash:()=>tone([1568,2093,2637],.07,'triangle'),
+  bad:()=>tone([220,160],.15,'sawtooth'), fanfare:()=>tone([523,659,784,1047,784,1047],.12,'triangle'), tick:()=>tone([660],.05)};
+function toast(t){ const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2400); }
+
+/* ---------- payments & debt ---------- */
+// Payments are queued; a shortfall pauses the queue in G.debt until the debtor hands over Title Deeds.
+function queuePay(from,to,amt,label){ if(amt>0) G.queue.push({from,to,amt,label}); }
+function runQueue(){
+  while(!G.debt && G.queue.length && G.phase==='play'){
+    const q=G.queue.shift(); const p=G.players[q.from];
+    if(p.out) continue;
+    const paid=Math.min(p.bal,q.amt); p.bal-=paid; if(q.to!=null) G.players[q.to].bal+=paid;
+    if(paid<q.amt){
+      G.undo=null; G.debt={debtor:q.from, creditor:q.to, remaining:q.amt-paid, label:q.label};
+      log(`${p.name} is short ${money(q.amt-paid)} (${q.label})`);
+      if(!ownedBy(q.from).length) bankrupt();
+      else S.bad();
+    } else log(`${p.name} paid ${pName(q.to)} ${money(q.amt)}: ${q.label}`);
+  }
+  save(); render();
+}
+function surrender(i){
+  const d=G.debt; if(!d) return;
+  if(G.props[i].owner!==d.debtor){ S.bad(); toast(`${pn(i)} isn't ${pName(d.debtor)}'s`); return; }
+  const val=DEEDS[i].price;
+  if(d.creditor==null){ G.props[i]={owner:null,level:0}; log(`${pName(d.debtor)} returned ${pn(i)} to the Bank`); }
+  else { G.props[i].owner=d.creditor; log(`${pName(d.debtor)} gave ${pn(i)} to ${pName(d.creditor)}`); }
+  d.remaining-=val; S.ok();
+  if(d.remaining<=0){ G.players[d.debtor].bal+=-d.remaining; if(d.remaining<0) log(`${money(-d.remaining)} change returned to ${pName(d.debtor)}`); G.debt=null; runQueue(); return; }
+  if(!ownedBy(d.debtor).length) bankrupt();
+  save(); render();
+}
+function bankrupt(){
+  const d=G.debt; const p=G.players[d.debtor]; p.out=true; p.bal=0;
+  if(d.creditor!=null){ G.players[d.creditor].bal+=d.remaining; log(`Bank covers the unpaid ${money(d.remaining)} to ${pName(d.creditor)}`); }
+  log(`${p.name} is BANKRUPT`); G.debt=null; G.queue=[]; endGame();
+}
+function endGame(){
+  G.phase='over';
+  G.winner = active().map(i=>({i, w:wealth(i), top:Math.max(0,...ownedBy(i).map(k=>DEEDS[k].price))})).sort((a,b)=>b.w-a.w || b.top-a.top);
+  S.fanfare(); save(); setMode({k:'idle'});
+}
+
+/* ---------- property rules ---------- */
+function bump(i, n){ const p=G.props[i]; if(p.owner==null) return false; p.level=Math.max(1,Math.min(5,p.level+n)); return true; }
+function setLevel(i, n){ const p=G.props[i]; if(p.owner==null) return false; p.level=n; return true; }
+function neighbours(i){ const n=DEEDS.length; return [(i+n-1)%n,(i+1)%n]; }
+const groupOf = i => DEEDS.map((d,k)=>k).filter(k=>DEEDS[k].group===DEEDS[i].group);
+const sideOf = i => { const [a,b]=SIDES.find(([a,b])=>i>=a&&i<=b); return Array.from({length:b-a+1},(_,k)=>a+k); };
+function checkSet(i){
+  const g=DEEDS[i].group; if(G.bonus[g]) return;
+  const members=groupOf(i);
+  if(members.some(k=>G.props[k].owner==null)) return;
+  const n=new Set(members.map(k=>G.props[k].owner)).size===1?2:1;
+  members.forEach(k=>bump(k,n)); G.bonus[g]=true; S.fanfare();
+  log(`Colour set complete! ${members.map(pn).join(', ')} jump ${n} level${n>1?'s':''}`);
+  toast(`Colour set bonus: +${n} rent level${n>1?'s':''}. Move the houses!`);
+}
+function buy(pi,i,price,label){
+  const pl=G.players[pi];
+  if(pl.jail){ S.bad(); toast(`${pl.name} is in Jail and can't buy`); return false; }
+  if(pl.bal<price){ S.bad(); toast(`${pl.name} only has ${money(pl.bal)}`); return false; }
+  G.undo=snap(label); pl.bal-=price; G.props[i]={owner:pi,level:1};
+  log(`${pl.name} bought ${pn(i)} for ${money(price)}`); S.cash();
+  checkSet(i); save(); return true;
+}
+
+/* ---------- card handling ---------- */
+function onCard(id, code){
+  const m=/^([BPE])(\d{1,2})$/.exec(id); if(!m) return;
+  const t=m[1], n=+m[2]-1;
+  if(t==='B') return onBank(n);
+  if(t==='P') return onProp(n);
+  if(t==='E') return onEvent(n, code);
+}
+
+function onBank(pi){
+  S.beep(); const pl=G.players[pi];
+  if(G.phase==='setup'){ pl.joined=!pl.joined; log(`${pl.name} ${pl.joined?'joined':'left'}`); save(); render(); return; }
+  if(G.phase==='over') return;
+  if(!pl.joined){ toast(`${pl.name} isn't in this game`); return; }
+  if(pl.out){ toast(`${pl.name} is bankrupt`); return; }
+  if(G.debt){ toast(`Finish the debt first: ${pName(G.debt.debtor)} hands over Title Deeds`); return; }
+  switch(M.k){
+    case 'prop': return bankOnProp(pi, M.i, false);
+    case 'locprop': return toast('Tap the Title Deed of the property you moved to first');
+    case 'locbuy': if(M.pi!=null && pi!==M.pi) return toast(`Waiting for ${pName(M.pi)}'s card`); return bankOnProp(pi, M.i, true);
+    case 'go': G.undo=snap('GO salary'); pl.bal+=200; log(`${pl.name} collected ${money(200)} for passing GO`); S.cash(); save(); return setMode({k:'idle'});
+    case 'jail':
+      if(!pl.jail) return toast(`${pl.name} isn't in Jail`);
+      G.undo=snap('Jail fee'); pl.jail=false; queuePay(pi,null,100,'Jail fee'); setMode({k:'idle'}); return runQueue();
+    case 'loc':
+      if(pl.bal<100) return toast(`${pl.name} can't afford the Location fee`);
+      G.undo=snap('Location fee'); pl.bal-=100; log(`${pl.name} paid ${money(100)} to use Location`); S.cash(); save();
+      return setMode({k:'locprop', pi});
+    case 'auctionPay': if(buy(pi,M.i,M.bid,'Auction')) setMode({k:'idle'}); else render(); return;
+    case 'event': return eventBank(pi);
+    default: setMode({k:'balance', pi}, 6000);
+  }
+}
+
+function onProp(i){
+  S.beep();
+  if(G.phase!=='play') return toast(G.phase==='setup'?'Start the game first':'Game over');
+  if(G.debt) return surrender(i);
+  if(M.k==='locprop') return setMode({k:'locbuy', pi:M.pi, i});
+  if(M.k==='event') return eventProp(i);
+  setMode({k:'prop', i}, 25000);
+}
+
+function bankOnProp(pi,i,viaMove){
+  const pr=G.props[i], pl=G.players[pi];
+  if(pr.owner==null){ if(buy(pi,i,DEEDS[i].price,'Buy property')) setMode({k:'idle'}); else render(); return; }
+  if(pr.owner===pi){ if(!viaMove) G.undo=snap('Rent rise'); bump(i,1); log(`${pl.name} raised rent on ${pn(i)} to level ${pr.level}`); S.ok(); save(); return setMode({k:'idle'}); }
+  if(viaMove){ toast(`${pn(i)} belongs to ${pName(pr.owner)}. Nothing to do.`); return setMode({k:'idle'}); }
+  const owner=G.players[pr.owner];
+  if(owner.jail){ log(`${owner.name} is in Jail: no rent for ${pn(i)}`); toast(`${owner.name} is in Jail. No rent, no rent rise.`); return setMode({k:'idle'}); }
+  G.undo=snap('Rent');
+  let rent=rentOf(i);
+  if(G.cheap>0){ rent=DEEDS[i].rents[0]; G.cheap--; log(`Marathon: rent charged at level 1 (${G.cheap} left)`); }
+  bump(i,1); queuePay(pi,pr.owner,rent,`rent on ${pn(i)}`);
+  S.cash(); toast(`Move the house to level ${pr.level}`); setMode({k:'idle'}); runQueue();
+}
+
+/* ---------- events ---------- */
+function onEvent(e, code){
+  S.beep(); if(G.phase!=='play') return toast('Start the game first');
+  if(G.debt) return toast('Finish the debt first');
+  G.undo=null; const type=EVENTS[e][2];
+  if(type==='marathon'){ G.cheap=2; log(`${EVENTS[e][0]}: next 2 rents at level 1`); S.ok(); save(); }
+  if(type==='move') return setMode({k:'locprop', pi:null, e, code});
+  setMode({k:'event', e, type, code, step:0, picked:[]});
+}
+function eventBank(pi){
+  const ev=EVENTS[M.e], pl=G.players[pi];
+  switch(M.type){
+    case 'both':
+      if(M.picked.includes(pi)) return toast(`${pl.name} already collected`);
+      pl.bal+=ev[3]; M.picked.push(pi); log(`${pl.name} collected ${money(ev[3])} (${ev[0]})`); S.cash(); save();
+      if(M.picked.length>=2) return setMode({k:'idle'}); return render();
+    case 'perProp': { const n=ownedBy(pi).length; queuePay(pi,null,ev[3]*n,`${ev[0]} (${n} properties)`); setMode({k:'idle'}); return runQueue(); }
+    case 'jail': pl.jail=true; log(`${pl.name} went to Jail (${ev[0]})`); S.bad(); save(); return setMode({k:'idle'});
+    default: return toast('This card needs a Title Deed, not a Bank card');
+  }
+}
+function eventProp(i){
+  const ev=EVENTS[M.e], pr=G.props[i]; let hit=[];
+  const owned = k => G.props[k].owner!=null;
+  switch(M.type){
+    case 'groupUp': case 'groupDown': if(!owned(i)) return toast(`${pn(i)} isn't owned. Tap one of your properties.`);
+      hit=groupOf(i).filter(owned); hit.forEach(k=>bump(k,M.type==='groupUp'?1:-1)); break;
+    case 'sideUp': case 'sideDown':
+      hit=sideOf(i).filter(owned); hit.forEach(k=>bump(k,M.type==='sideUp'?1:-1)); break;
+    case 'partyUp': if(!owned(i)) return toast(`${pn(i)} isn't owned. Tap one of your properties.`);
+      bump(i,1); hit=[i]; neighbours(i).filter(owned).forEach(k=>{ if(k!==i){ bump(k,-1); hit.push(k); } }); break;
+    case 'max': if(!owned(i)) return toast(`${pn(i)} isn't owned. Tap one of your properties.`); setLevel(i,5); hit=[i]; break;
+    case 'min': if(owned(i)){ setLevel(i,1); hit=[i]; } break;
+    case 'swap':
+      if(!owned(i)) return toast(`${pn(i)} isn't owned by anyone`);
+      if(!M.picked.length){ M.picked=[i]; S.ok(); return render(); }
+      { const a=M.picked[0]; if(G.props[a].owner===pr.owner) return toast('Pick a property owned by the other player');
+        const oa=G.props[a].owner; G.props[a].owner=pr.owner; pr.owner=oa;
+        log(`${ev[0]}: ${pn(a)} ↔ ${pn(i)} swapped owners`); S.ok(); save(); toast('Swap the Title Deed cards'); return setMode({k:'idle'}); }
+    default: return toast('This card needs a Bank card, not a Title Deed');
+  }
+  log(hit.length?`${ev[0]}: ${hit.map(k=>`${pn(k)} → level ${G.props[k].level}`).join(', ')}`:`${ev[0]}: ${pn(i)} is unowned, nothing changes`);
+  S.ok(); save(); toast(hit.length?'Move the houses to the new levels':'Nothing changed'); setMode({k:'idle'});
+}
+function fixEvent(code, newE){
+  // The scanned code belongs to a different Event card: swap mappings and remember it.
+  const oldId=CODES[code], newId='E'+(newE+1);
+  const other=Object.keys(CODES).find(c=>CODES[c]===newId);
+  CODES[code]=newId; if(other) CODES[other]=oldId;
+  const fix=store.get('codefix',{}); fix[code]=newId; if(other) fix[other]=oldId; store.set('codefix',fix);
+  toast('Remembered. This card will read correctly from now on.');
+  onEvent(newE, code);
+}
+
+/* ---------- keys ---------- */
+let auctionTimer=null;
+function key(k){
+  S.tick();
+  if(k==='exit'){ clearInterval(auctionTimer); return setMode({k:'idle'}); }
+  if(G.phase==='setup'){ toast('Tap Bank cards to join, then press Start'); return; }
+  if(G.phase!=='play') return;
+  if(G.debt && k!=='undo') return toast('Finish the debt first');
+  if(k==='go') return setMode({k:'go'}, 20000);
+  if(k==='loc') return setMode({k:'loc'}, 20000);
+  if(k==='jail') return setMode({k:'jail'}, 20000);
+  if(k==='undo'){
+    if(G.debt || !G.undo) return toast('Nothing to cancel'); const u=G.undo;
+    G.players=u.players; G.props=u.props; G.bonus=u.bonus; G.cheap=u.cheap||0; G.undo=null; G.queue=[]; log(`Cancelled: ${u.label}`); S.ok(); save(); return setMode({k:'idle'});
+  }
+  if(k==='auction'){
+    if(!(M.k==='prop'||M.k==='locbuy') || G.props[M.i].owner!=null) return toast('Tap an unowned Title Deed first');
+    return setMode({k:'auctionReady', i:M.i});
+  }
+  if(k==='bid'){
+    if(M.k==='auctionReady') return startAuction();
+    if(M.k==='auction'){ M.bid+=20; M.left=4; S.tick(); render(); return; }
+    return toast('Start an auction first');
+  }
+}
+function startAuction(){
+  setMode({k:'auction', i:M.i, bid:0, left:4});
+  clearInterval(auctionTimer);
+  auctionTimer=setInterval(()=>{
+    if(M.k!=='auction'){ clearInterval(auctionTimer); return; }
+    M.left--; tone([M.left>0?520:260],.08);
+    if(M.left<=0){ clearInterval(auctionTimer);
+      if(M.bid===0){ toast('No bids. Tap the Title Deed to restart, or Exit.'); return setMode({k:'idle'}); }
+      return setMode({k:'auctionPay', i:M.i, bid:M.bid}); }
+    render();
+  }, 1500);
+}
+
+/* ---------- rendering ---------- */
+const sw = g => `<span class="swatch" style="background:var(${GROUPS[g]})"></span>`;
+function playersHtml(){
+  return `<div class="players">${G.players.map(p=>p.joined?`<div class="pl ${p.out?'out':''} ${p.jail?'jail':''}"><span>${p.name}${p.jail?' ▣':''}</span><span>${money(p.bal)}</span></div>`:'').join('')}</div>`;
+}
+function levelsHtml(i){ const lv=G.props[i].level; return `<div class="lv">${DEEDS[i].rents.map((r,k)=>`<span class="${k+1===lv?'on':''}">${r}</span>`).join('')}</div>`; }
+function propHead(i){ const d=DEEDS[i]; return `<div class="uk">${sw(d.group)}${i+1}. ${esc(d.name)}</div>`; }
+function eventHead(e){ return `<div class="dim">EVENT</div><div class="uk">${esc(EVENTS[e][0])}</div><div>${esc(EVENTS[e][1])}</div>`; }
+function fixHtml(){
+  if(!M.code) return '';
+  return `<details><summary class="dim" style="font-size:18px">Not the card in your hand?</summary>
+    <select id="evFix"><option value="">Choose the right card…</option>${EVENTS.map((e,k)=>`<option value="${k}">${esc(e[0])}</option>`).join('')}</select></details>`;
+}
+function render(){
+  const L=$('#lcd'); let h='';
+  if(G.phase==='setup'){
+    const n=G.players.filter(p=>p.joined).length;
+    h=`<div class="big">NEW GAME</div><div>Show each player's Bank card to join.</div>
+      <div class="players">${G.players.map(p=>`<div class="pl" style="${p.joined?'':'opacity:.35'}"><span>${p.name}</span><span>${p.joined?'IN':'—'}</span></div>`).join('')}</div>
+      <div class="actions">${n>=2?`<button class="act" id="start">Start: ${n} players, ${money(1500)} each</button>`:`<span class="dim blink">Need at least 2 players</span>`}</div>`;
+  } else if(G.phase==='over'){
+    h=`<div class="big">WINNER: ${pName(G.winner[0]?.i)}</div>${G.winner.map((r,k)=>`<div>${k+1}. ${pName(r.i)} ${money(r.w)}</div>`).join('')}
+      <div class="dim">Money plus property at purchase price.</div>`;
+  } else if(G.debt){
+    const d=G.debt;
+    h=`<div class="big">IN DEBT</div><div>${pName(d.debtor)} owes ${pName(d.creditor)} ${money(d.remaining)} more.</div>
+      <div class="dim">Show ${pName(d.debtor)}'s Title Deeds to hand them over (${d.creditor==null?'they go back to the Bank: remove the house':'leave the house, give the card over'}).</div>
+      <div class="actions">${ownedBy(d.debtor).map(i=>`<button class="act alt" data-surr="${i}">${esc(pn(i))} ${money(DEEDS[i].price)}</button>`).join('')}</div>`;
+  } else switch(M.k){
+    case 'prop': { const i=M.i, pr=G.props[i];
+      h=propHead(i)+(pr.owner==null
+        ? `<div class="big">${money(DEEDS[i].price)}</div><div>Unowned. Show a Bank card to buy, or press Auction.</div>`
+        : `<div>${pName(pr.owner)} owns it. Rent level ${pr.level}.</div><div class="big">Rent ${money(G.cheap>0?DEEDS[i].rents[0]:rentOf(i))}</div>${levelsHtml(i)}
+           <div class="dim">Show the Bank card of whoever landed here. The owner's card raises the rent.</div>`)
+        +`<div class="blink dim">Waiting for a Bank card…</div>`; break; }
+    case 'balance': { const pi=M.pi;
+      h=`<div class="big">${pName(pi)}</div><div>Balance ${money(G.players[pi].bal)} · Wealth ${money(wealth(pi))}</div>
+        ${ownedBy(pi).map(i=>`<div>${sw(DEEDS[i].group)}${esc(pn(i))} · L${G.props[i].level} · ${money(rentOf(i))}</div>`).join('')||'<div class="dim">No properties yet</div>'}`; break; }
+    case 'go': h=`<div class="big">GO</div><div>Collect ${money(200)}.</div><div class="blink dim">Show your Bank card…</div>`; break;
+    case 'jail': h=`<div class="big">JAIL</div><div>Pay ${money(100)} to get out.</div><div class="blink dim">Show your Bank card…</div>`; break;
+    case 'loc': h=`<div class="big">LOCATION</div><div>Pay ${money(100)} and move to any property.</div><div class="blink dim">Show your Bank card…</div>`; break;
+    case 'locprop': h=(M.e!=null?eventHead(M.e):`<div class="big">LOCATION</div><div>${pName(M.pi)}: move your token.</div>`)
+      +`<div class="blink dim">Show the Title Deed of the property you moved to…</div>`+(M.e!=null?fixHtml():''); break;
+    case 'locbuy': { const i=M.i, pr=G.props[i], who=M.pi==null?'You':pName(M.pi);
+      h=propHead(i)+`<div>${pr.owner==null?`Buy for ${money(DEEDS[i].price)}, or press Auction.`:pr.owner===M.pi||M.pi==null?`If it's yours, your Bank card raises the rent to level ${Math.min(5,pr.level+1)}.`:`Owned by ${pName(pr.owner)}. Nothing to do.`}</div>
+        <div class="blink dim">${who}: show your Bank card, or press Exit to do nothing.</div>`; break; }
+    case 'auctionReady': h=propHead(M.i)+`<div class="big">AUCTION</div><div>Each press adds ${money(20)}. Say the amount out loud. Players in Jail can't bid.</div><div class="actions"><button class="act" data-k="bid">Start auction</button></div>`; break;
+    case 'auction': h=propHead(M.i)+`<div class="big">${money(M.bid)}</div><div>${'● '.repeat(M.left)}${'○ '.repeat(4-M.left)}</div><div class="actions"><button class="act" data-k="bid">+20 BID</button></div>`; break;
+    case 'auctionPay': h=propHead(M.i)+`<div class="big">SOLD ${money(M.bid)}</div><div class="blink dim">Winning bidder: show your Bank card…</div>`; break;
+    case 'event': {
+      const t=M.type, needsBank=['both','perProp','jail'].includes(t);
+      h=eventHead(M.e);
+      if(t==='none'||t==='marathon') h+=`<div class="actions"><button class="act" data-k="exit">Done</button></div>`;
+      else if(t==='swap') h+=`<div class="blink dim">${M.picked.length?`Got ${esc(pn(M.picked[0]))}. Now the other player's Title Deed…`:'Show your Title Deed…'}</div>`;
+      else if(t==='both') h+=`<div class="blink dim">${M.picked.length?`${pName(M.picked[0])} collected. Now the other player's Bank card…`:'Show the first Bank card…'}</div>`;
+      else h+=`<div class="blink dim">${needsBank?'Show the Bank card…':'Show the Title Deed…'}</div>`;
+      h+=fixHtml(); break; }
+    default:
+      h=`${playersHtml()}${G.cheap>0?`<div>Marathon: next ${G.cheap} rent${G.cheap>1?'s':''} at level 1</div>`:''}<div class="dim">Show a card, or press GO, Location or Jail.</div>`;
+  }
+  L.innerHTML=h;
+  const st=$('#start'); if(st) st.onclick=startGame;
+  L.querySelectorAll('[data-surr]').forEach(b=>b.onclick=()=>surrender(+b.dataset.surr));
+  L.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>key(b.dataset.k));
+  const fx=$('#evFix'); if(fx) fx.onchange=()=>{ if(fx.value!=='') fixEvent(M.code, +fx.value); };
+  $('#log').innerHTML=G.log.map(t=>`<div>${esc(t)}</div>`).join('')||'<div>No activity yet.</div>';
+  renderJail();
+}
+function renderJail(){
+  const box=$('#jailctl');
+  if(G.phase!=='play'){ box.innerHTML='<span class="note">Available once the game starts.</span>'; return; }
+  box.innerHTML=active().map(i=>{const p=G.players[i]; return p.jail
+    ? `<button class="btn ghost" data-free="${i}">${p.name}: rolled a double, free</button>`
+    : `<button class="btn ghost" data-jail="${i}">Send ${p.name} to Jail</button>`;}).join('');
+  box.querySelectorAll('[data-jail]').forEach(b=>b.onclick=()=>{G.players[+b.dataset.jail].jail=true; log(`${pName(+b.dataset.jail)} went to Jail`); S.bad(); save(); render();});
+  box.querySelectorAll('[data-free]').forEach(b=>b.onclick=()=>{G.players[+b.dataset.free].jail=false; log(`${pName(+b.dataset.free)} rolled a double and left Jail`); S.ok(); save(); render();});
+}
+function startGame(){
+  G.players.forEach(p=>{ if(p.joined) p.bal=1500; }); G.phase='play'; log(`Game started. Everyone gets ${money(1500)}.`); S.cash(); save(); setMode({k:'idle'});
+}
+
+/* ---------- manual cards & setup ---------- */
+function renderManual(){
+  const b=[...TOKENS.map((t,i)=>`<button class="cardbtn" data-c="B${i+1}"><i style="background:var(--fg)"></i>${t} · Bank</button>`),
+    ...DEEDS.map((d,i)=>`<button class="cardbtn" data-c="P${i+1}"><i style="background:var(${GROUPS[d.group]})"></i>${i+1}. ${esc(d.name)}</button>`),
+    ...EVENTS.map((e,i)=>`<button class="cardbtn" data-c="E${i+1}"><i style="background:var(--muted)"></i>${esc(e[0])}</button>`)];
+  $('#manual').innerHTML=b.join('');
+  $('#manual').querySelectorAll('[data-c]').forEach(x=>x.onclick=()=>onCard(x.dataset.c));
+}
+function renderDeeds(){
+  $('#deeds').innerHTML=`<tr><th>#</th><th>Property</th><th>Price</th>${[1,2,3,4,5].map(n=>`<th>L${n}</th>`).join('')}</tr>`+
+    DEEDS.map((d,i)=>`<tr><td>${i+1}</td><td>${sw(d.group)}${esc(d.name)}<br><span class="note">${esc(d.en)}</span></td><td><input id="pr${i}" type="number" step="10" value="${d.price}"></td>
+      ${d.rents.map((r,k)=>`<td><input id="r${i}_${k}" type="number" step="10" value="${r}"></td>`).join('')}</tr>`).join('');
+  $('#deeds').oninput=e=>{ const id=e.target.id; let m;
+    if(m=/^pr(\d+)$/.exec(id)) DEEDS[+m[1]].price=+e.target.value||0;
+    else if(m=/^r(\d+)_(\d)$/.exec(id)) DEEDS[+m[1]].rents[+m[2]]=+e.target.value||0;
+    save(); };
+}
+
+/* ---------- bar-code decoder ----------
+   Each card has a white strip with 5 slots for black bars. A bar sits in the left (L) or right (R) position of a
+   slot; R is 0.075 strip-widths further right, slots are 0.2 apart, bars are 0.105 wide. The middle slot always
+   holds the marker: a bar with a tab across the top that covers both positions, so it's 0.18 wide.
+   The marker gives orientation (tab side) and its own L/R; bar height (about 0.38 strip-widths) gives the scale.
+   Only same-kind edges are compared (left with left), so blur and lighting don't shift the result. */
+const OFF=.075, PITCH=.2, BAR_H=.38;
+const SLOTS=[]; for(const j of [-2,-1,1,2]) for(const [s,off] of [['L',0],['R',OFF]]) SLOTS.push([j,s,j*PITCH+off]);
+function otsu(g){
+  const h=new Uint32Array(256); for(let i=0;i<g.length;i++) h[g[i]]++;
+  let sum=0; for(let i=0;i<256;i++) sum+=i*h[i];
+  let sB=0,wB=0,best=0,t=128; const tot=g.length;
+  for(let i=0;i<256;i++){ wB+=h[i]; if(!wB) continue; const wF=tot-wB; if(!wF) break; sB+=i*h[i];
+    const mB=sB/wB, mF=(sum-sB)/wF, b=wB*wF*(mB-mF)*(mB-mF); if(b>best){best=b;t=i;} }
+  return t;
+}
+function components(bin,W,H){
+  const lab=new Int32Array(W*H), st=new Int32Array(W*H), comps=[]; let id=0;
+  for(let p=0;p<W*H;p++){
+    if(!bin[p]||lab[p]) continue; id++; let sp=0; st[sp++]=p; lab[p]=id;
+    let x0=W,x1=0,y0=H,y1=0,n=0;
+    while(sp){ const q=st[--sp], x=q%W, y=(q-x)/W; n++;
+      if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+      if(x>0&&bin[q-1]&&!lab[q-1]){lab[q-1]=id;st[sp++]=q-1;}
+      if(x<W-1&&bin[q+1]&&!lab[q+1]){lab[q+1]=id;st[sp++]=q+1;}
+      if(y>0&&bin[q-W]&&!lab[q-W]){lab[q-W]=id;st[sp++]=q-W;}
+      if(y<H-1&&bin[q+W]&&!lab[q+W]){lab[q+W]=id;st[sp++]=q+W;} }
+    const w=x1-x0+1, h=y1-y0+1; comps.push({id,x0,x1:x1+1,y0,y1:y1+1,w,h,n,fill:n/(w*h)});
+  }
+  return {lab,comps};
+}
+function decodeGray(g,W,H,raw){
+  // threshold a little darker than Otsu so the thin white gaps between neighbouring bars survive blur
+  const t0=otsu(g); let ds=0, dn=0; for(let i=0;i<W*H;i++) if(g[i]<t0){ ds+=g[i]; dn++; }
+  const t=dn ? (ds/dn)+.7*(t0-ds/dn) : t0;
+  const bin=new Uint8Array(W*H); for(let i=0;i<W*H;i++) bin[i]=g[i]<t?1:0;
+  const {lab,comps}=components(bin,W,H);
+  const cand=comps.filter(c=>c.h>=12 && c.h>1.3*c.w && c.fill>.5 && c.w>=3);
+  let found=null;
+  for(const a of cand){
+    const r=a.w/a.h; if(r<.38||r>.7) continue;                     // marker is about twice as tall as wide
+    const cy=(a.y0+a.y1)/2;
+    const near=cand.filter(c=>c!==a && Math.abs(c.h-a.h)<.22*a.h && Math.abs((c.y0+c.y1)/2-cy)<.15*a.h
+      && Math.abs((c.x0+c.x1)/2-(a.x0+a.x1)/2)<a.w*3.4);
+    const others=near.filter(c=>c.w>.4*a.w && c.w<.85*a.w);
+    const pairs=near.filter(c=>c.fill>.8 && c.w>=1.1*a.w && c.w<1.7*a.w);   // two touching bars seen as one
+    if(near.length>others.length+pairs.length) continue;              // a bar-sized blob we can't explain: don't guess
+    // orientation: the tab end is dark across the marker's whole width
+    const band=Math.max(2,Math.round(a.h*.12)); let top=0, bot=0;
+    for(let y=a.y0;y<a.y1;y++) for(let x=a.x0;x<a.x1;x++){ if(lab[y*W+x]!==a.id) continue;
+      if(y<a.y0+band) top++; if(y>=a.y1-band) bot++; }
+    const flip=bot>top;
+    // extent of the marker's bar part (away from the tab)
+    const ly0=flip?a.y0+Math.round(a.h*.1):a.y0+Math.round(a.h*.45), ly1=flip?a.y0+Math.round(a.h*.55):a.y0+Math.round(a.h*.9);
+    let bx0=a.x1, bx1=a.x0;
+    for(let y=ly0;y<ly1;y++){ let cnt=0, rx0=a.x1, rx1=a.x0;
+      for(let x=a.x0;x<a.x1;x++) if(lab[y*W+x]===a.id){ cnt++; if(x<rx0)rx0=x; if(x+1>rx1)rx1=x+1; }
+      if(cnt){ bx0=Math.min(bx0,rx0); bx1=Math.max(bx1,rx1); } }
+    if(bx1<=bx0) continue;
+    // work in "oriented" coordinates: mirror x when the card is upside down
+    const o = flip ? (x0,x1)=>[-x1,-x0] : (x0,x1)=>[x0,x1];
+    const [A0,A1]=o(a.x0,a.x1), [B0,B1]=o(bx0,bx1);
+    const side = (B0-A0) > (A1-B1) ? 'R' : 'L';                      // bar part sits away from the notch
+    const sH = a.h/BAR_H;                                            // bar height is about 0.38 strip-widths
+    const bw=a.w*.105/.18, lefts=others.map(c=>o(c.x0,c.x1)[0]);
+    for(const c of pairs){ const [p0,p1]=o(c.x0,c.x1); lefts.push(p0, p1-bw); }
+    // 1) assign each bar to its nearest slot using the height-based scale
+    // 2) refine the scale by least squares for that assignment and check every bar lands on its slot
+    const rel = x => x-B0;                                            // distance from the marker's own bar (left edges)
+    const mOff = side==='R' ? OFF : 0;                                // marker bar position within slot 0
+    const slots={}; let ok=true; const fitPts=[];
+    for(const x of lefts){ const d=rel(x)/sH+mOff; let e=9,bj,bs,bg;
+      for(const [j,sd,gp] of SLOTS){ const q=Math.abs(d-gp); if(q<e){e=q;bj=j;bs=sd;bg=gp;} }
+      if(slots[bj]) ok=false; slots[bj]=bs; fitPts.push([rel(x), bg-mOff]); }
+    if(!ok) continue;
+    let num=0, den=0; for(const [px,gd] of fitPts){ num+=px*gd; den+=gd*gd; }
+    const sFit = den ? num/den : sH;
+    if(sFit<sH*.85 || sFit>sH*1.15) continue;
+    let mx=0; for(const [px,gd] of fitPts) mx=Math.max(mx, Math.abs(px/sFit-gd));
+    if(mx>.022) continue;
+    const code=[-2,-1,0,1,2].map(j=>j?(slots[j]||'.'):side).join('');
+    // Final check: re-draw the code and compare with the picture. In every slot, sample the part only an L bar
+    // covers, the part both cover, and the part only an R bar covers, across the middle of the bars.
+    const base = B0 - mOff*sFit, yA=a.y0+Math.round(a.h*.3), yB=a.y0+Math.round(a.h*.7);
+    const zone = (u0,u1) => { let dk=0, n=0;
+      for(let u=u0; u<=u1+1e-9; u+=(u1-u0)/4){ const xo=base+u*sFit, xi=Math.round(flip?-xo:xo);
+        if(xi<0||xi>=W) return -1;
+        for(let y=yA;y<=yB;y+=Math.max(1,Math.round((yB-yA)/6))){ n++; if(bin[y*W+xi]) dk++; } }
+      return dk/n; };
+    let verified=true;
+    for(let j=-2;j<=2 && verified;j++){
+      const st=code[j+2], x=j*PITCH, onlyL=zone(x+.015,x+.055), both=zone(x+.085,x+.095), onlyR=zone(x+.125,x+.165);
+      if(onlyL<0||both<0||onlyR<0){ verified=false; break; }
+      const want = st==='L'?[1,1,0] : st==='R'?[0,1,1] : [0,0,0];
+      [onlyL,both,onlyR].forEach((f,k)=>{ if(want[k]? f<.6 : f>.25) verified=false; });
+    }
+    // the card's white margin must be visible just beyond both ends of the code
+    if(verified){ const m0=zone(-2*PITCH-.04,-2*PITCH-.012), m1=zone(2*PITCH+.192,2*PITCH+.22); if(m0<0||m1<0||m0>.25||m1>.25) verified=false; }
+    if(!verified) continue;
+    if(!raw && !CODES[code]) continue;
+    if(!found || others.length>found.n) found={code,n:others.length};
+  }
+  return found && found.code;
+}
+function decodeFrameGray(g,W,H,raw){
+  let c=decodeGray(g,W,H,raw); if(c) return c;
+  const t=new Uint8Array(W*H); for(let y=0;y<H;y++) for(let x=0;x<W;x++) t[x*H+(H-1-y)]=g[y*W+x];   // card turned sideways: rotate 90°
+  return decodeGray(t,H,W,raw);
+}
+
+/* ---------- camera ---------- */
+const cardName = id => { const t=id[0], n=+id.slice(1)-1; return t==='B'?`${TOKENS[n]} Bank card`:t==='P'?`${n+1}. ${DEEDS[n].name}`:EVENTS[n][0]; };
+let stream=null, scanning=false, lastSeen=null, seenCount=0, missCount=0, fired=null;
+const work=document.createElement('canvas'), wx=work.getContext('2d',{willReadFrequently:true});
+const GUIDE={x:.08,y:.12,w:.84,h:.76};
+const status = t => { $('#rstat').textContent=t; };
+function grabGray(deg){
+  const v=$('#vid'); if(!stream || v.readyState<2 || !v.videoWidth) return null;
+  const el=v.getBoundingClientRect(), vw=v.videoWidth, vh=v.videoHeight;
+  const s=Math.max(el.width/vw, el.height/vh), visW=el.width/s, visH=el.height/s, ox=(vw-visW)/2, oy=(vh-visH)/2;
+  const rx=ox+GUIDE.x*visW, ry=oy+GUIDE.y*visH, rw=GUIDE.w*visW, rh=GUIDE.h*visH;
+  const W=Math.min(560,Math.round(rw)), H=Math.round(W*rh/rw);
+  work.width=W; work.height=H; wx.save();
+  if(deg){ wx.translate(W/2,H/2); wx.rotate(deg*Math.PI/180); wx.translate(-W/2,-H/2); }   // straighten a tilted card
+  wx.drawImage(v,rx,ry,rw,rh,0,0,W,H); wx.restore();
+  const d=wx.getImageData(0,0,W,H).data, g=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++) g[i]=d[i*4+3]<255?255:(d[i*4]*77+d[i*4+1]*150+d[i*4+2]*29)>>8;   // corners left empty by rotation count as white
+  return {g,W,H};
+}
+async function startCam(){
+  if(!navigator.mediaDevices?.getUserMedia){ $('#camoff').textContent='The camera needs an HTTPS page. Use the manual buttons below.'; return; }
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
+    const v=$('#vid'); v.srcObject=stream; await v.play(); $('#camoff').hidden=true;
+    const tr=stream.getVideoTracks()[0]; $('#btnTorch').hidden=!(tr.getCapabilities?.().torch);
+    scanning=true; loop(); store.set('cam',true);
+    try{ await navigator.wakeLock?.request('screen'); }catch(e){}
+  }catch(e){ $('#camoff').textContent='Camera blocked. Allow camera access, or use the manual buttons.'; }
+}
+function stopCam(){ scanning=false; stream?.getTracks().forEach(t=>t.stop()); stream=null; $('#camoff').hidden=false; $('#camoff').textContent='Tap to start the card reader'; store.set('cam',false); }
+let torch=false;
+async function toggleTorch(){ try{ torch=!torch; await stream.getVideoTracks()[0].applyConstraints({advanced:[{torch}]}); $('#btnTorch').textContent=torch?'Light on':'Light'; }catch(e){ toast('This camera has no light control'); } }
+// Try the angle that worked last time, then one other angle per frame, so tilted cards still read.
+const ANGLES=[0,4,-4,8,-8]; let angleIx=0, tryIx=1;
+function readFrame(){
+  let f=grabGray(ANGLES[angleIx]); if(!f) return {f:null};
+  let code=decodeFrameGray(f.g,f.W,f.H);
+  if(!code){ tryIx=(tryIx+1)%ANGLES.length; if(tryIx===angleIx) tryIx=(tryIx+1)%ANGLES.length;
+    const g=grabGray(ANGLES[tryIx]); code=g&&decodeFrameGray(g.g,g.W,g.H); if(code) angleIx=tryIx; }
+  return {f, code};
+}
+function loop(){
+  if(!scanning) return;
+  const {f,code}=readFrame();
+  if(f){
+    if(code){
+      missCount=0; seenCount = code===lastSeen ? seenCount+1 : 1; lastSeen=code;
+      // fire once per "tap": the same code twice in a row, and the card must leave before it fires again
+      if(seenCount===2 && fired!==code){
+        fired=code; const id=CODES[code];
+        $('#reader').classList.add('hit'); setTimeout(()=>$('#reader').classList.remove('hit'),400); navigator.vibrate?.(40);
+        status('✓ '+cardName(id)); onCard(id, code);
+      }
+    } else if(++missCount>=4){ fired=null; lastSeen=null; seenCount=0; }
+  }
+  setTimeout(()=>requestAnimationFrame(loop),90);
+}
+
+/* ---------- wire up ---------- */
+$('#keys').onclick=e=>{ const b=e.target.closest('[data-k]'); if(b) key(b.dataset.k); };
+$('#reader').onclick=()=>{ if(!stream) startCam(); };
+$('#btnCam').onclick=()=>stream?stopCam():startCam();
+$('#btnTorch').onclick=toggleTorch;
+const syncSound=()=>$('#btnSound').textContent=soundOn?'Sound on':'Sound off';
+$('#btnSound').onclick=()=>{ soundOn=!soundOn; store.set('sound',soundOn); syncSound(); S.ok(); };
+$('#btnNew').onclick=()=>{ $('#confirmNew').hidden=false; };
+$('#btnNewNo').onclick=()=>{ $('#confirmNew').hidden=true; };
+$('#btnNewYes').onclick=()=>{ G=freshGame(); $('#confirmNew').hidden=true; save(); setMode({k:'idle'}); };
+syncSound(); renderManual(); renderDeeds(); render();
+if(store.get('cam',false)) startCam();
+</script>
+</body>
+</html>
