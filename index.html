@@ -31,6 +31,7 @@
   --bg:#17171a; --fg:#ecebe8; --muted:#a19d96; --line:#33323a; --key:#2a2a30; --key-ink:#f0efec;
   --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 var(--font-ui);-webkit-tap-highlight-color:transparent;
   padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
@@ -41,6 +42,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 @media (min-width:900px){
   .wrap{max-width:1180px;display:grid;grid-template-columns:minmax(380px,540px) minmax(0,1fr);align-items:start;gap:16px}
   .unit{position:sticky;top:max(12px,env(safe-area-inset-top,0px))}
+  .unit .reader{max-height:max(150px,calc(100vh - 500px));max-height:max(150px,calc(100dvh - 500px))}
+  .unit .lcd{min-height:200px}
   .side .cards{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 }
 .unit{background:var(--shell);border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:12px;box-shadow:inset 0 -6px 0 var(--shell-dk)}
@@ -82,6 +85,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .act.alt{background:transparent;color:var(--lcd-ink);border:2px solid var(--lcd-ink)}
 .panel{background:var(--key);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .panel h2{margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+details.panel > summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+details.panel > summary::-webkit-details-marker{display:none}
+details.panel > summary::after{content:"▸";font-size:16px;transition:transform .15s}
+details.panel[open] > summary::after{transform:rotate(90deg)}
+details.panel[open]{gap:10px}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
 .cardbtn{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:6px;font-size:12px;text-align:left;min-height:44px;display:flex;gap:6px;align-items:center}
 .cardbtn i{flex:0 0 8px;align-self:stretch;border-radius:3px}
@@ -94,7 +102,6 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
 .btn{background:var(--fg);color:var(--bg);border:0;border-radius:8px;padding:9px 12px;font-weight:600}
 .btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
 .note{font-size:13px;color:var(--muted);margin:0}
-.install{border-color:var(--shell)}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 14px;border-radius:10px;font-weight:600;max-width:90vw;z-index:9}
 </style>
 </head>
@@ -124,27 +131,6 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
   </div>
 
   <div class="side">
-    <div class="panel install" id="installHint" hidden>
-      <h2>Встановити на iPad</h2>
-      <p class="note">Відкрийте цю сторінку в Safari, натисніть «Поділитися» (квадрат зі стрілкою), потім «На початковий екран». Термінал запускатиметься як окрема програма на весь екран.</p>
-    </div>
-
-    <div class="panel">
-      <h2>Прикласти картку вручну</h2>
-      <p class="note">Якщо камера не зчитує картку. Діє так само, як сканування.</p>
-      <div class="cards" id="manual"></div>
-    </div>
-
-    <div class="panel">
-      <h2>Гравці та В'язниця</h2>
-      <div id="jailctl" class="actions"></div>
-    </div>
-
-    <div class="panel">
-      <h2>Журнал</h2>
-      <div class="log" id="log"></div>
-    </div>
-
     <div class="panel">
       <h2>Налаштування</h2>
       <details><summary>Картки власності (ціни та оренда)</summary>
@@ -160,6 +146,22 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
         <button class="btn ghost" id="btnNewNo">Продовжити гру</button>
       </div>
     </div>
+
+    <div class="panel">
+      <h2>Гравці та В'язниця</h2>
+      <div id="jailctl" class="actions"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Журнал</h2>
+      <div class="log" id="log"></div>
+    </div>
+
+    <details class="panel">
+      <summary>Прикласти картку вручну</summary>
+      <p class="note">Якщо камера не зчитує картку. Діє так само, як сканування.</p>
+      <div class="cards" id="manual"></div>
+    </details>
   </div>
 </div>
 
@@ -782,10 +784,6 @@ $('#btnSound').onclick=()=>{ soundOn=!soundOn; store.set('sound',soundOn); syncS
 $('#btnNew').onclick=()=>{ $('#confirmNew').hidden=false; };
 $('#btnNewNo').onclick=()=>{ $('#confirmNew').hidden=true; };
 $('#btnNewYes').onclick=()=>{ G=freshGame(); $('#confirmNew').hidden=true; save(); setMode({k:'idle'}); };
-// Show the "Add to Home Screen" hint on iPad/iPhone Safari when not already installed.
-const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
-const installed=navigator.standalone===true || matchMedia('(display-mode: standalone)').matches;
-$('#installHint').hidden=!(isIOS && !installed);
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 syncSound(); syncFlip(); renderManual(); renderDeeds(); render();
 if(store.get('cam',false)) startCam();
