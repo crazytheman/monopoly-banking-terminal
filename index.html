@@ -21,16 +21,16 @@
   --shell:#b3121f; --shell-dk:#7d0b15; --lcd:#c9d6c3; --lcd-ink:#1f2b1c; --lcd-dim:#5d6e58;
   --key:#f4f4f2; --key-ink:#1d1d1f; --bg:#eceae6; --fg:#1d1d1f; --muted:#6b6862; --line:#d3d0ca;
   --c-brown:#6b4a2f; --c-lblue:#9fd3ef; --c-pink:#e0399a; --c-orange:#f08a1c; --c-red:#e0242f; --c-yellow:#f5d90a; --c-green:#1f9d55; --c-dblue:#1d4fd3;
-  --p0:#e0242f; --p1:#1f9d55; --p2:#2f6fe0; --p3:#9aa0a8;
+  --p0:#fbfbf8; --p1:#f08a1c; --p2:#aab5c3; --p3:#e0242f;
   --font-lcd:"VT323", ui-monospace, "Consolas", monospace;
   --font-ui:"Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#17171a; --fg:#ecebe8; --muted:#a19d96; --line:#33323a; --key:#2a2a30; --key-ink:#f0efec;
-  --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; --p3:#f4f4f2; color-scheme:dark}}
+  --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; --p2:#c6cfdb; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#17171a; --fg:#ecebe8; --muted:#a19d96; --line:#33323a; --key:#2a2a30; --key-ink:#f0efec;
-  --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; --p3:#f4f4f2; color-scheme:dark}
+  --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; --p2:#c6cfdb; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
@@ -43,8 +43,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 @media (min-width:900px){
   .wrap{max-width:1180px;display:grid;grid-template-columns:minmax(380px,540px) minmax(0,1fr);align-items:start;gap:16px}
   .unit{position:sticky;top:max(12px,env(safe-area-inset-top,0px))}
-  .unit .reader{max-height:max(150px,calc(100vh - 500px));max-height:max(150px,calc(100dvh - 500px))}
-  .unit .lcd{min-height:200px}
+  .unit{height:calc(100vh - 36px);height:calc(100dvh - max(12px,env(safe-area-inset-top,0px)) - max(24px,env(safe-area-inset-bottom,0px)));max-height:900px}
+  .unit .lcd{flex:1 1 auto;min-height:0;overflow:auto}
+  .unit .lcd .rl{font-size:20px}
+  .unit .lcd .big{font-size:44px}
+  .unit .lcd{font-size:26px}
   .side .cards{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 }
 .unit{background:var(--shell);border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:12px;box-shadow:inset 0 -6px 0 var(--shell-dk)}
@@ -55,13 +58,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .chip.icon{width:32px;height:32px;padding:0;display:grid;place-items:center}
 .chip.icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .chip.icon[aria-pressed="true"]{background:#fff;color:var(--shell)}
-.reader{position:relative;width:100%;aspect-ratio:16/10;max-height:46vh;border-radius:14px;overflow:hidden;background:#000}
+.readrow{display:flex;gap:10px;align-items:center}
+.reader{position:relative;flex:0 0 auto;width:min(190px,46%);aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000;cursor:pointer}
 .reader video{width:100%;height:100%;object-fit:cover;display:block}
 .reader.front video{transform:scaleX(-1)}   /* mirror the preview like a selfie camera; reading uses the unmirrored frame */
-.reader .frame{position:absolute;left:8%;top:12%;width:84%;height:76%;border:2px dashed rgba(255,255,255,.8);border-radius:8px;pointer-events:none;box-shadow:0 0 0 999px rgba(0,0,0,.28)}
+.reader .frame{position:absolute;left:8%;top:12%;width:84%;height:76%;border:1.5px dashed rgba(255,255,255,.8);border-radius:5px;pointer-events:none;box-shadow:0 0 0 999px rgba(0,0,0,.28)}
 .reader.hit .frame{border:3px solid #6cff8a}
-.reader .off{position:absolute;inset:0;display:grid;place-items:center;color:#fff;text-align:center;font-size:14px;padding:16px}
-.rstat{color:#fff;font-size:12px;min-height:18px;overflow-wrap:anywhere}
+.reader .off{position:absolute;inset:0;display:grid;place-items:center;color:#fff;text-align:center;font-size:12px;font-weight:600;padding:6px}
+.rinfo{flex:1 1 auto;min-width:0;color:#fff;display:flex;flex-direction:column;gap:2px}
+.rlast{font-weight:800;font-size:16px;line-height:1.2;overflow-wrap:anywhere}
+.rstat{font-size:12px;opacity:.85;overflow-wrap:anywhere}
 .lcd{background:var(--lcd);color:var(--lcd-ink);border-radius:12px;padding:12px 14px;min-height:230px;font-family:var(--font-lcd);font-size:24px;line-height:1.1;box-shadow:inset 0 3px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:8px}
 .lcd .big{font-size:38px;line-height:1}
 .lcd .dim{color:var(--lcd-dim)}
@@ -114,7 +120,7 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
 .lcd .rl{font-family:var(--font-ui);font-size:17px;font-weight:600;line-height:1.3}
 .lcd .rl b{font-weight:800}
 .score{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.tile{background:var(--bg);border:1px solid var(--line);border-left:8px solid var(--pc);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile{background:var(--bg);border:1px solid var(--line);border-left:8px solid var(--pc);box-shadow:inset 1px 0 0 rgba(0,0,0,.3);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .tile.out{opacity:.45}
 .tile.injail{border-style:dashed;border-left-style:solid}
 .tname{font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
@@ -148,8 +154,10 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
           <svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg></button>
         <button class="chip icon" id="btnSound" aria-pressed="true" aria-label="Звук" title="Звук"></button>
       </div>
-      <div class="reader" id="reader"><video id="vid" playsinline muted></video><div class="frame"></div><div class="off" id="camoff">Торкніться, щоб увімкнути зчитувач карток</div></div>
-      <div class="rstat" id="rstat">Покажіть білу смужку зі штрихкодом картки в рамці.</div>
+      <div class="readrow">
+        <div class="reader" id="reader"><video id="vid" playsinline muted></video><div class="frame"></div><div class="off" id="camoff">Увімкнути камеру</div></div>
+        <div class="rinfo"><div class="rlast" id="rlast">Зчитувач карток</div><div class="rstat" id="rstat">Покажіть білу смужку зі штрихкодом картки камері.</div></div>
+      </div>
     </div>
     <div class="lcd" id="lcd" aria-live="polite"></div>
     <div class="keys" id="keys">
@@ -879,11 +887,11 @@ let stream=null, scanning=false, lastSeen=null, seenCount=0, missCount=0, fired=
 const work=document.createElement('canvas'), wx=work.getContext('2d',{willReadFrequently:true});
 const GUIDE={x:.08,y:.12,w:.84,h:.76};
 const status = t => { $('#rstat').textContent=t; };
+// The reading area is a fixed part of the whole camera picture, so the preview can be any size.
 function grabGray(deg){
   const v=$('#vid'); if(!stream || v.readyState<2 || !v.videoWidth) return null;
-  const el=v.getBoundingClientRect(), vw=v.videoWidth, vh=v.videoHeight;
-  const s=Math.max(el.width/vw, el.height/vh), visW=el.width/s, visH=el.height/s, ox=(vw-visW)/2, oy=(vh-visH)/2;
-  const rx=ox+GUIDE.x*visW, ry=oy+GUIDE.y*visH, rw=GUIDE.w*visW, rh=GUIDE.h*visH;
+  const vw=v.videoWidth, vh=v.videoHeight;
+  const rx=GUIDE.x*vw, ry=GUIDE.y*vh, rw=GUIDE.w*vw, rh=GUIDE.h*vh;
   const W=Math.min(560,Math.round(rw)), H=Math.round(W*rh/rw);
   work.width=W; work.height=H; wx.save();
   if(deg){ wx.translate(W/2,H/2); wx.rotate(deg*Math.PI/180); wx.translate(-W/2,-H/2); }   // straighten a tilted card
@@ -892,18 +900,20 @@ function grabGray(deg){
   for(let i=0;i<W*H;i++) g[i]=d[i*4+3]<255?255:(d[i*4]*77+d[i*4+1]*150+d[i*4+2]*29)>>8;   // corners left empty by rotation count as white
   return {g,W,H};
 }
-const CAM_OFF='Торкніться, щоб увімкнути зчитувач карток';
+const CAM_OFF='Увімкнути камеру';
 async function startCam(){
-  if(!navigator.mediaDevices?.getUserMedia){ $('#camoff').textContent='Камері потрібна сторінка HTTPS. Скористайтеся кнопками нижче.'; return; }
+  if(!navigator.mediaDevices?.getUserMedia){ status('Камері потрібна сторінка HTTPS. Скористайтеся ручним введенням карток.'); return; }
   try{
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:720}},audio:false});
     $('#reader').classList.toggle('front', facing==='user');
     const v=$('#vid'); v.srcObject=stream; await v.play(); $('#camoff').hidden=true;
+    if(v.videoWidth) $('#reader').style.aspectRatio=`${v.videoWidth}/${v.videoHeight}`;   // show the whole picture, so the frame matches the reading area
+    status('Покажіть білу смужку зі штрихкодом картки камері.');
     const tr=stream.getVideoTracks()[0]; $('#btnTorch').style.visibility=tr.getCapabilities?.().torch?'visible':'hidden';
     torch=false; $('#btnTorch').setAttribute('aria-pressed','false');
     scanning=true; loop(++loopGen); store.set('cam',true);
     try{ await navigator.wakeLock?.request('screen'); }catch(e){}
-  }catch(e){ $('#camoff').textContent='Камеру заблоковано. Дозвольте доступ до камери або скористайтеся кнопками нижче.'; }
+  }catch(e){ status('Камеру заблоковано. Дозвольте доступ до камери або скористайтеся ручним введенням карток.'); }
 }
 function stopCam(){ $('#btnTorch').style.visibility='hidden'; scanning=false; stream?.getTracks().forEach(t=>t.stop()); stream=null; $('#camoff').hidden=false; $('#camoff').textContent=CAM_OFF; store.set('cam',false); }
 // Back or front camera; the choice is remembered on this device.
@@ -929,7 +939,7 @@ function loop(gen){
       if(seenCount===2 && fired!==code){
         fired=code; const id=CODES[code];
         $('#reader').classList.add('hit'); setTimeout(()=>$('#reader').classList.remove('hit'),400); navigator.vibrate?.(40);
-        status('✓ '+cardName(id)); onCard(id, code);
+        $('#rlast').textContent='✓ '+cardName(id); onCard(id, code);
       }
     } else if(++missCount>=4){ fired=null; lastSeen=null; seenCount=0; }
   }
