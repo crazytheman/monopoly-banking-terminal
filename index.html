@@ -21,15 +21,16 @@
   --shell:#b3121f; --shell-dk:#7d0b15; --lcd:#c9d6c3; --lcd-ink:#1f2b1c; --lcd-dim:#5d6e58;
   --key:#f4f4f2; --key-ink:#1d1d1f; --bg:#eceae6; --fg:#1d1d1f; --muted:#6b6862; --line:#d3d0ca;
   --c-brown:#6b4a2f; --c-lblue:#9fd3ef; --c-pink:#e0399a; --c-orange:#f08a1c; --c-red:#e0242f; --c-yellow:#f5d90a; --c-green:#1f9d55; --c-dblue:#1d4fd3;
+  --p0:#e0242f; --p1:#1f9d55; --p2:#2f6fe0; --p3:#9aa0a8;
   --font-lcd:"VT323", ui-monospace, "Consolas", monospace;
   --font-ui:"Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#17171a; --fg:#ecebe8; --muted:#a19d96; --line:#33323a; --key:#2a2a30; --key-ink:#f0efec;
-  --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; color-scheme:dark}}
+  --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; --p3:#f4f4f2; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#17171a; --fg:#ecebe8; --muted:#a19d96; --line:#33323a; --key:#2a2a30; --key-ink:#f0efec;
-  --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; color-scheme:dark}
+  --lcd:#9fb498; --lcd-ink:#121a10; --lcd-dim:#40513b; --shell:#9a101b; --shell-dk:#5e0810; --p3:#f4f4f2; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
@@ -74,6 +75,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .pl span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pl{border:2px solid var(--lcd-ink);border-radius:6px;padding:4px 8px;display:flex;justify-content:space-between;gap:6px;font-variant-numeric:tabular-nums}
 .pl.out{opacity:.35;text-decoration:line-through}
+.lcd .pl{font-size:20px;align-items:center}
 .pl.jail{border-style:dashed}
 .swatch{display:inline-block;width:.8em;height:.8em;border:2px solid var(--lcd-ink);vertical-align:-1px;margin-right:4px}
 .lv{display:flex;gap:4px}
@@ -106,6 +108,32 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
 .btn{background:var(--fg);color:var(--bg);border:0;border-radius:8px;padding:9px 12px;font-weight:600}
 .btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
 .note{font-size:13px;color:var(--muted);margin:0}
+.pc{display:inline-flex;align-items:center;gap:.35em;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.pc i{flex:0 0 auto;width:.8em;height:.8em;border-radius:50%;background:var(--pc);border:2px solid currentColor}
+.pc.bank i{background:transparent;border-style:dotted}
+.lcd .rl{font-family:var(--font-ui);font-size:17px;font-weight:600;line-height:1.3}
+.lcd .rl b{font-weight:800}
+.score{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tile{background:var(--bg);border:1px solid var(--line);border-left:8px solid var(--pc);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile.out{opacity:.45}
+.tile.injail{border-style:dashed;border-left-style:solid}
+.tname{font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tname i{flex:0 0 auto;width:10px;height:10px;border-radius:50%;background:var(--pc);border:1.5px solid var(--fg)}
+.tbal{font-size:clamp(24px,3vw,34px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.tsub{font-size:12px;color:var(--muted)}
+.tact{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.tact button{font-size:12px;font-weight:600;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--key);color:var(--fg)}
+.board{display:grid;grid-template-columns:minmax(0,1fr);font-size:13px}
+@media (min-width:1500px){.board{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px}}
+.prow{display:grid;grid-template-columns:6px 20px minmax(0,1fr) auto 58px 60px;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line);min-width:0}
+.prow.free{color:var(--muted)}
+.prow .pname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .pown{font-size:12px;max-width:120px;overflow:hidden}
+.gsw{height:16px;border-radius:2px}
+.pips{display:flex;gap:2px}.pips b{width:9px;height:9px;border:1px solid currentColor;border-radius:2px}.pips b.on{background:currentColor}
+.prent{text-align:right;font-variant-numeric:tabular-nums}
+.pnum{font-variant-numeric:tabular-nums;color:var(--muted)}
+.opt{display:flex;gap:8px;align-items:center;font-weight:600}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 14px;border-radius:10px;font-weight:600;max-width:90vw;z-index:9}
 </style>
 </head>
@@ -131,7 +159,7 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
       <button class="key" data-k="exit">✖ Вихід</button>
       <button class="key" data-k="auction">Аукціон</button>
       <button class="key" data-k="bid">+20 Ставка</button>
-      <button class="key wide" data-k="undo">Скасувати останню</button>
+      <button class="key wide" data-k="undo" id="undoKey">Скасувати</button>
     </div>
   </div>
 
@@ -142,6 +170,8 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
         <p class="note">Оренда взята з ваших карток власності, ціни з ігрового поля.</p>
         <div class="tablewrap"><table id="deeds"></table></div>
       </details>
+      <label class="opt"><input type="checkbox" id="optVoice"> Озвучувати операції українською</label>
+      <p class="note" id="voiceNote" hidden>На цьому пристрої немає українського голосу. Його можна додати в «Параметри → Універсальний доступ → Усний контент → Голоси».</p>
       <div class="actions">
         <button class="btn ghost" id="btnNew">Нова гра</button>
       </div>
@@ -153,8 +183,13 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
     </div>
 
     <div class="panel">
-      <h2>Гравці та В'язниця</h2>
-      <div id="jailctl" class="actions"></div>
+      <h2>Гравці</h2>
+      <div class="score" id="score"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Поле</h2>
+      <div class="board" id="board"></div>
     </div>
 
     <div class="panel">
@@ -272,8 +307,11 @@ const levels = n => `${n} ${plural(n,'рівень','рівні','рівнів')
 function log(t){ G.log.unshift(t); G.log.length=Math.min(G.log.length,80); }
 const snap = label => ({label, players:JSON.parse(JSON.stringify(G.players)), props:JSON.parse(JSON.stringify(G.props)), bonus:{...G.bonus}, cheap:G.cheap});
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const q = i => `«${esc(pn(i))}»`;
+// Player colours match the tokens on the Bank cards: red car, green helicopter, blue yacht, white jet.
+const chip = i => i==null ? `<span class="pc bank"><i></i>Банк</span>` : `<span class="pc" style="--pc:var(--p${i})"><i></i>${esc(pName(i))}</span>`;
 
-/* ---------- звук ---------- */
+/* ---------- звук і голос ---------- */
 let AC=null, soundOn = store.get('sound', true);
 function tone(freqs, dur=.09, type='square'){
   if(!soundOn) return; try{ AC = AC || new (window.AudioContext||window.webkitAudioContext)();
@@ -282,6 +320,27 @@ function tone(freqs, dur=.09, type='square'){
 const S = {beep:()=>tone([1320]), ok:()=>tone([880,1320],.08), cash:()=>tone([1568,2093,2637],.07,'triangle'),
   bad:()=>tone([220,160],.15,'sawtooth'), fanfare:()=>tone([523,659,784,1047,784,1047],.12,'triangle'), tick:()=>tone([660],.05)};
 function toast(t){ const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2600); }
+// Spoken announcements use the device's Ukrainian voice; with no Ukrainian voice installed the app stays silent.
+let voiceOn = store.get('voice', true), ukVoice = null;
+function pickVoice(){ try{ ukVoice=(speechSynthesis.getVoices()||[]).find(v=>/^uk/i.test(v.lang))||null; }catch(e){ ukVoice=null; } syncVoice(); }
+function say(text){
+  if(!voiceOn || !soundOn || !ukVoice || !text) return;
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.voice=ukVoice; u.lang=ukVoice.lang; u.rate=1.05; speechSynthesis.speak(u); }catch(e){}
+}
+
+/* ---------- квитанція: що щойно сталося ---------- */
+// After every transaction the screen holds the result for a few seconds: who paid whom, house moves, new balances.
+function receipt(title, lines, who, speech, ms=5000){
+  setMode({k:'receipt', title, lines:lines.filter(Boolean), who:[...new Set(who)].filter(i=>i!=null)}, ms); say(speech);
+}
+const levelsNow = () => G.props.map(p=>({o:p.owner, l:p.level}));
+function houseLines(before){
+  const out=[];
+  G.props.forEach((p,i)=>{ const b=before[i];
+    if(b.o!=null && p.owner==null) out.push(`${q(i)}: зніміть будинок`);
+    else if(p.owner!=null && b.l!==p.level) out.push(`${q(i)}: будинок ${b.l||'—'} → <b>${p.level}</b>`); });
+  return out;
+}
 
 /* ---------- платежі та борги ---------- */
 // Платежі йдуть у чергу; якщо грошей не вистачає, черга чекає в G.debt, доки боржник не віддасть картки власності.
@@ -295,11 +354,12 @@ function runQueue(){
       G.undo=null; G.debt={debtor:q.from, creditor:q.to, remaining:q.amt-paid, label:q.label};
       log(`${p.name}: не вистачає ${money(q.amt-paid)} (${q.label})`);
       if(!ownedBy(q.from).length) bankrupt();
-      else S.bad();
+      else { S.bad(); say(`${p.name}: не вистачає грошей`); }
     } else log(`${p.name} → ${pName(q.to)}: ${money(q.amt)}, ${q.label}`);
   }
   save(); render();
 }
+const settled = () => G.phase==='play' && !G.debt;
 function surrender(i){
   const d=G.debt; if(!d) return;
   if(G.props[i].owner!==d.debtor){ S.bad(); toast(`${pn(i)} не належить гравцю ${pName(d.debtor)}`); return; }
@@ -307,14 +367,22 @@ function surrender(i){
   if(d.creditor==null){ G.props[i]={owner:null,level:0}; log(`${pn(i)}: ${pName(d.debtor)} повертає Банку`); }
   else { G.props[i].owner=d.creditor; log(`${pn(i)}: ${pName(d.debtor)} → ${pName(d.creditor)}`); }
   d.remaining-=val; S.ok();
-  if(d.remaining<=0){ G.players[d.debtor].bal+=-d.remaining; if(d.remaining<0) log(`Решта ${money(-d.remaining)} → ${pName(d.debtor)}`); G.debt=null; runQueue(); return; }
+  d.given=(d.given||[]).concat(i);
+  if(d.remaining<=0){
+    const change=-d.remaining; G.players[d.debtor].bal+=change; if(change>0) log(`Решта ${money(change)} → ${pName(d.debtor)}`);
+    G.debt=null; runQueue();
+    if(settled()) receipt('БОРГ ЗАКРИТО', [
+      ...d.given.map(k=>`${q(k)}: ${chip(d.debtor)} → ${chip(d.creditor)}${d.creditor==null?' (зніміть будинок)':''}`),
+      change>0 && `Решта ${chip(d.debtor)}: +${money(change)}`], [d.debtor,d.creditor], 'Борг закрито');
+    return;
+  }
   if(!ownedBy(d.debtor).length) bankrupt();
   save(); render();
 }
 function bankrupt(){
   const d=G.debt; const p=G.players[d.debtor]; p.out=true; p.bal=0;
   if(d.creditor!=null){ G.players[d.creditor].bal+=d.remaining; log(`Банк доплачує ${pName(d.creditor)} ${money(d.remaining)} несплаченого боргу`); }
-  log(`${p.name}: БАНКРУТ`); G.debt=null; G.queue=[]; endGame();
+  log(`${p.name}: БАНКРУТ`); G.debt=null; G.queue=[]; endGame(); say(`${p.name}: банкрут. Гру завершено`);
 }
 function endGame(){
   G.phase='over';
@@ -329,21 +397,25 @@ function neighbours(i){ const n=DEEDS.length; return [(i+n-1)%n,(i+1)%n]; }
 const groupOf = i => DEEDS.map((d,k)=>k).filter(k=>DEEDS[k].group===DEEDS[i].group);
 const sideOf = i => { const [a,b]=SIDES.find(([a,b])=>i>=a&&i<=b); return Array.from({length:b-a+1},(_,k)=>a+k); };
 function checkSet(i){
-  const g=DEEDS[i].group; if(G.bonus[g]) return;
+  const g=DEEDS[i].group; if(G.bonus[g]) return null;
   const members=groupOf(i);
-  if(members.some(k=>G.props[k].owner==null)) return;
+  if(members.some(k=>G.props[k].owner==null)) return null;
   const n=new Set(members.map(k=>G.props[k].owner)).size===1?2:1;
   members.forEach(k=>bump(k,n)); G.bonus[g]=true; S.fanfare();
   log(`Групу кольору зібрано! ${members.map(pn).join(', ')}: +${levels(n)}`);
-  toast(`Бонус за групу кольору: +${levels(n)}. Пересуньте будинки!`);
+  return `<b>Групу кольору зібрано: +${levels(n)}</b>`;
 }
-function buy(pi,i,price,label){
+function buy(pi,i,price,how){
   const pl=G.players[pi];
   if(pl.jail){ S.bad(); toast(`${pl.name} у В'язниці й не може купувати`); return false; }
   if(pl.bal<price){ S.bad(); toast(`${pl.name}: на рахунку лише ${money(pl.bal)}`); return false; }
-  G.undo=snap(label); pl.bal-=price; G.props[i]={owner:pi,level:1};
+  G.undo=snap(`${how} ${q(i)} (${pl.name}, ${money(price)})`);
+  const before=levelsNow(); pl.bal-=price; G.props[i]={owner:pi,level:1};
   log(`${pl.name} купує «${pn(i)}» за ${money(price)}`); S.cash();
-  checkSet(i); save(); return true;
+  const bonus=checkSet(i); save();
+  receipt('КУПЛЕНО', [`${chip(pi)} купує ${q(i)}: −${money(price)}`, bonus, ...houseLines(before)], [pi],
+    `Куплено. ${pn(i)}. ${price}`, bonus?6500:5000);
+  return true;
 }
 
 /* ---------- обробка карток ---------- */
@@ -366,16 +438,22 @@ function onBank(pi){
     case 'prop': return bankOnProp(pi, M.i, false);
     case 'locprop': return toast('Спершу покажіть картку власності поля, на яке ви перейшли');
     case 'locbuy': if(M.pi!=null && pi!==M.pi) return toast(`Чекаю на картку: ${pName(M.pi)}`); return bankOnProp(pi, M.i, true);
-    case 'go': G.undo=snap('ВПЕРЕД'); pl.bal+=200; log(`${pl.name} отримує ${money(200)} за поле «ВПЕРЕД»`); S.cash(); save(); return setMode({k:'idle'});
+    case 'go':
+      G.undo=snap(`ВПЕРЕД (${pl.name}, +${money(200)})`); pl.bal+=200; log(`${pl.name} отримує ${money(200)} за поле «ВПЕРЕД»`); S.cash(); save();
+      return receipt('ВПЕРЕД', [`${chip(pi)}: +${money(200)}`], [pi], 'Вперед. Плюс двісті');
     case 'jail':
       if(!pl.jail) return toast(`${pl.name} не у В'язниці`);
-      G.undo=snap('вихід з В’язниці'); pl.jail=false; queuePay(pi,null,100,'вихід з В’язниці'); setMode({k:'idle'}); return runQueue();
+      G.undo=snap(`вихід з В’язниці (${pl.name}, ${money(100)})`); pl.jail=false; pl.tries=0;
+      queuePay(pi,null,100,'вихід з В’язниці'); runQueue();
+      if(settled()) receipt('ВИХІД З В’ЯЗНИЦІ', [`${chip(pi)}: −${money(100)}`], [pi], 'Вихід з вʼязниці');
+      return;
     case 'loc':
       if(pl.bal<100) return toast(`${pl.name}: не вистачає грошей на Локацію`);
-      G.undo=snap('Локація'); pl.bal-=100; log(`${pl.name} сплачує ${money(100)} за Локацію`); S.cash(); save();
+      G.undo=snap(`Локація (${pl.name}, ${money(100)})`); pl.bal-=100; log(`${pl.name} сплачує ${money(100)} за Локацію`); S.cash(); save();
       return setMode({k:'locprop', pi});
-    case 'auctionPay': if(buy(pi,M.i,M.bid,'Аукціон')) setMode({k:'idle'}); else render(); return;
+    case 'auctionPay': if(!buy(pi,M.i,M.bid,'аукціон')) render(); return;
     case 'event': return eventBank(pi);
+    case 'undoAsk': return setMode({k:'balance', pi}, 6000);
     default: setMode({k:'balance', pi}, 6000);
   }
 }
@@ -386,21 +464,27 @@ function onProp(i){
   if(G.debt) return surrender(i);
   if(M.k==='locprop') return setMode({k:'locbuy', pi:M.pi, i});
   if(M.k==='event') return eventProp(i);
-  setMode({k:'prop', i}, 25000);
+  setMode({k:'prop', i});
 }
 
 function bankOnProp(pi,i,viaMove){
   const pr=G.props[i], pl=G.players[pi];
-  if(pr.owner==null){ if(buy(pi,i,DEEDS[i].price,'купівля')) setMode({k:'idle'}); else render(); return; }
-  if(pr.owner===pi){ if(!viaMove) G.undo=snap('підвищення оренди'); bump(i,1); log(`${pl.name}: оренда ${pn(i)} → рівень ${pr.level}`); S.ok(); save(); return setMode({k:'idle'}); }
+  if(pr.owner==null){ if(!buy(pi,i,DEEDS[i].price,'купівля')) render(); return; }
+  if(pr.owner===pi){
+    if(!viaMove) G.undo=snap(`підвищення оренди ${q(i)} (${pl.name})`);
+    const before=levelsNow(); bump(i,1); log(`${pl.name}: оренда ${pn(i)} → рівень ${pr.level}`); S.ok(); save();
+    return receipt('ОРЕНДУ ПІДВИЩЕНО', [`${chip(pi)}: ${q(i)}`, ...houseLines(before), `Нова оренда: ${money(rentOf(i))}`], [pi], `Оренду підвищено. Рівень ${pr.level}`);
+  }
   if(viaMove){ toast(`${pn(i)} належить: ${pName(pr.owner)}. Нічого робити не треба.`); return setMode({k:'idle'}); }
-  const owner=G.players[pr.owner];
-  if(owner.jail){ log(`${owner.name} у В'язниці: оренди за ${pn(i)} немає`); toast(`${owner.name} у В'язниці: ні оренди, ні підвищення.`); return setMode({k:'idle'}); }
-  G.undo=snap('оренда');
-  let rent=rentOf(i);
-  if(G.cheap>0){ rent=DEEDS[i].rents[0]; G.cheap--; log(`Марафон: оренда за рівнем 1 (залишилось ${G.cheap})`); }
-  bump(i,1); queuePay(pi,pr.owner,rent,`оренда за «${pn(i)}»`);
-  S.cash(); toast(`Пересуньте будинок на рівень ${pr.level}`); setMode({k:'idle'}); runQueue();
+  const owner=G.players[pr.owner], oi=pr.owner;
+  if(owner.jail){ log(`${owner.name} у В'язниці: оренди за ${pn(i)} немає`);
+    return receipt('БЕЗ ОРЕНДИ', [`${chip(oi)} у В'язниці: за ${q(i)} не платять, оренда не росте.`], [pi,oi], 'Власник у вʼязниці. Оренди немає'); }
+  let rent=rentOf(i), cheap=false;
+  G.undo=snap(`оренда за ${q(i)} (${pl.name} → ${owner.name})`);
+  if(G.cheap>0){ rent=DEEDS[i].rents[0]; G.cheap--; cheap=true; log(`Марафон: оренда за рівнем 1 (залишилось ${G.cheap})`); }
+  G.undo.label=`оренда за ${q(i)} (${pl.name} → ${owner.name}, ${money(rent)})`;
+  const before=levelsNow(); bump(i,1); queuePay(pi,oi,rent,`оренда за «${pn(i)}»`); S.cash(); runQueue();
+  if(settled()) receipt('ОРЕНДА', [`${chip(pi)} → ${chip(oi)}: <b>${money(rent)}</b>`, cheap&&`Марафон: оплата за рівнем 1`, ...houseLines(before)], [pi,oi], `Оренда ${rent}`);
 }
 
 /* ---------- події ---------- */
@@ -408,6 +492,7 @@ function onEvent(e, code){
   S.beep(); if(G.phase!=='play') return toast('Спершу почніть гру');
   if(G.debt) return toast('Спершу закрийте борг');
   G.undo=null; const type=EVENTS[e][2];
+  say(EVENTS[e][0]);
   if(type==='marathon'){ G.cheap=2; log(`${EVENTS[e][0]}: наступні 2 оренди за рівнем 1`); S.ok(); save(); }
   if(type==='move') return setMode({k:'locprop', pi:null, e, code});
   setMode({k:'event', e, type, code, step:0, picked:[]});
@@ -418,9 +503,14 @@ function eventBank(pi){
     case 'both':
       if(M.picked.includes(pi)) return toast(`${pl.name}: вже отримано`);
       pl.bal+=ev[3]; M.picked.push(pi); log(`${pl.name} отримує ${money(ev[3])} (${ev[0]})`); S.cash(); save();
-      if(M.picked.length>=2) return setMode({k:'idle'}); return render();
-    case 'perProp': { const n=ownedBy(pi).length; queuePay(pi,null,ev[3]*n,`${ev[0]} (${n} ${plural(n,'об’єкт','об’єкти','об’єктів')})`); setMode({k:'idle'}); return runQueue(); }
-    case 'jail': pl.jail=true; log(`${pl.name} іде до В'язниці (${ev[0]})`); S.bad(); save(); return setMode({k:'idle'});
+      if(M.picked.length>=2) return receipt(ev[0], M.picked.map(k=>`${chip(k)}: +${money(ev[3])}`), M.picked, `Кожен отримує ${ev[3]}`);
+      return render();
+    case 'perProp': { const n=ownedBy(pi).length, amt=ev[3]*n;
+      queuePay(pi,null,amt,`${ev[0]} (${n} ${plural(n,'об’єкт','об’єкти','об’єктів')})`); runQueue();
+      if(settled()) receipt(ev[0], [`${chip(pi)}: −${money(amt)}`, `${n} ${plural(n,'об’єкт','об’єкти','об’єктів')} × ${money(ev[3])}`], [pi], `Сплатити ${amt}`);
+      return; }
+    case 'jail': pl.jail=true; pl.tries=0; log(`${pl.name} іде до В'язниці (${ev[0]})`); S.bad(); save();
+      return receipt(ev[0], [`${chip(pi)} іде до В'язниці. Поле «ВПЕРЕД» не проходить.`], [pi], `${pl.name} іде до вʼязниці`);
     default: return toast('Для цієї картки потрібна картка власності, а не Банківська');
   }
 }
@@ -428,6 +518,7 @@ function eventProp(i){
   const ev=EVENTS[M.e], pr=G.props[i]; let hit=[];
   const owned = k => G.props[k].owner!=null;
   const notOwned = () => toast(`${pn(i)} нікому не належить. Покажіть одну зі своїх карток власності.`);
+  const before=levelsNow();
   switch(M.type){
     case 'groupUp': case 'groupDown': if(!owned(i)) return notOwned();
       hit=groupOf(i).filter(owned); hit.forEach(k=>bump(k,M.type==='groupUp'?1:-1)); break;
@@ -441,12 +532,16 @@ function eventProp(i){
       if(!owned(i)) return toast(`${pn(i)} нікому не належить`);
       if(!M.picked.length){ M.picked=[i]; S.ok(); return render(); }
       { const a=M.picked[0]; if(G.props[a].owner===pr.owner) return toast('Покажіть власність іншого гравця');
-        const oa=G.props[a].owner; G.props[a].owner=pr.owner; pr.owner=oa;
-        log(`${ev[0]}: ${pn(a)} ↔ ${pn(i)}, власників обміняно`); S.ok(); save(); toast('Обміняйтеся картками власності'); return setMode({k:'idle'}); }
+        const oa=G.props[a].owner, ob=pr.owner; G.props[a].owner=ob; pr.owner=oa;
+        log(`${ev[0]}: ${pn(a)} ↔ ${pn(i)}, власників обміняно`); S.ok(); save();
+        return receipt(ev[0], [`${q(a)}: ${chip(oa)} → ${chip(ob)}`, `${q(i)}: ${chip(ob)} → ${chip(oa)}`, 'Обміняйтеся картками власності. Будинки залишаються на місці.'], [oa,ob], 'Власність обміняно', 6000); }
     default: return toast('Для цієї картки потрібна Банківська картка, а не картка власності');
   }
   log(hit.length?`${ev[0]}: ${hit.map(k=>`${pn(k)} → рівень ${G.props[k].level}`).join(', ')}`:`${ev[0]}: ${pn(i)} нікому не належить, нічого не змінилося`);
-  S.ok(); save(); toast(hit.length?'Пересуньте будинки на нові рівні':'Нічого не змінилося'); setMode({k:'idle'});
+  S.ok(); save();
+  const lines=houseLines(before);
+  receipt(ev[0], lines.length?lines:[`Нічого не змінилося: ${hit.length?'рівні вже на межі':q(i)+' нікому не належить'}.`],
+    hit.map(k=>G.props[k].owner), lines.length?'Пересуньте будинки':'Нічого не змінилося', lines.length>2?7000:5000);
 }
 function fixEvent(code, newE){
   // Зчитаний код належить іншій картці «Подія»: міняємо відповідність і запам'ятовуємо.
@@ -458,28 +553,44 @@ function fixEvent(code, newE){
   onEvent(newE, code);
 }
 
+/* ---------- В'язниця ---------- */
+function sendToJail(i){ const p=G.players[i]; p.jail=true; p.tries=0; log(`${p.name} іде до В'язниці`); S.bad(); save(); say(`${p.name} іде до вʼязниці`); render(); }
+function freeByDouble(i){ const p=G.players[i]; p.jail=false; p.tries=0; log(`${p.name}: дубль, вихід з В'язниці`); S.ok(); save(); render(); }
+function missedDouble(i){
+  const p=G.players[i]; p.tries=(p.tries||0)+1; log(`${p.name}: не дубль (спроба ${p.tries} з 3)`); save();
+  if(p.tries>=3){ S.bad(); say(`${p.name}: третя спроба. Сплатіть сто`); return setMode({k:'jail', who:i}); }
+  S.tick(); render();
+}
+
 /* ---------- кнопки ---------- */
 let auctionTimer=null;
+function doUndo(){
+  const u=G.undo; if(!u) return;
+  G.players=u.players; G.props=u.props; G.bonus=u.bonus; G.cheap=u.cheap||0; G.undo=null; G.queue=[]; log(`Скасовано: ${u.label.replace(/<[^>]+>/g,'')}`); S.ok(); save();
+  receipt('СКАСОВАНО', [u.label, 'Поверніть будинки й картки, як було.'], [], 'Скасовано');
+}
 function key(k){
   S.tick();
   if(k==='exit'){ clearInterval(auctionTimer); return setMode({k:'idle'}); }
   if(G.phase==='setup'){ toast('Покажіть Банківські картки, щоб приєднатися, потім натисніть «Почати»'); return; }
   if(G.phase!=='play') return;
   if(G.debt && k!=='undo') return toast('Спершу закрийте борг');
-  if(k==='go') return setMode({k:'go'}, 20000);
-  if(k==='loc') return setMode({k:'loc'}, 20000);
-  if(k==='jail') return setMode({k:'jail'}, 20000);
+  if(k==='go') return setMode({k:'go'});
+  if(k==='loc') return setMode({k:'loc'});
+  if(k==='jail') return setMode({k:'jail'});
   if(k==='undo'){
-    if(G.debt || !G.undo) return toast('Немає що скасовувати'); const u=G.undo;
-    G.players=u.players; G.props=u.props; G.bonus=u.bonus; G.cheap=u.cheap||0; G.undo=null; G.queue=[]; log(`Скасовано: ${u.label}`); S.ok(); save(); return setMode({k:'idle'});
+    if(G.debt || !G.undo) return toast('Немає що скасовувати');
+    if(M.k==='undoAsk') return doUndo();                              // second press confirms
+    return setMode({k:'undoAsk'});
   }
+  if(k==='undoYes') return doUndo();
   if(k==='auction'){
     if(!(M.k==='prop'||M.k==='locbuy') || G.props[M.i].owner!=null) return toast('Спершу покажіть картку вільної власності');
     return setMode({k:'auctionReady', i:M.i});
   }
-  if(k==='bid'){
+  if(k==='bid'||k==='bid100'){
     if(M.k==='auctionReady') return startAuction();
-    if(M.k==='auction'){ M.bid+=20; M.left=4; S.tick(); render(); return; }
+    if(M.k==='auction'){ M.bid+=k==='bid100'?100:20; M.left=4; S.tick(); render(); return; }
     return toast('Спершу почніть аукціон');
   }
 }
@@ -491,6 +602,7 @@ function startAuction(){
     M.left--; tone([M.left>0?520:260],.08);
     if(M.left<=0){ clearInterval(auctionTimer);
       if(M.bid===0){ toast('Ставок немає. Покажіть картку власності ще раз або натисніть «Вихід».'); return setMode({k:'idle'}); }
+      say(`Продано за ${M.bid}`);
       return setMode({k:'auctionPay', i:M.i, bid:M.bid}); }
     render();
   }, 1500);
@@ -498,8 +610,9 @@ function startAuction(){
 
 /* ---------- екран ---------- */
 const sw = g => `<span class="swatch" style="background:var(${GROUPS[g]})"></span>`;
-function playersHtml(){
-  return `<div class="players">${G.players.map(p=>p.joined?`<div class="pl ${p.out?'out':''} ${p.jail?'jail':''}"><span>${p.name}${p.jail?' ▣':''}</span><span>${money(p.bal)}</span></div>`:'').join('')}</div>`;
+function playersHtml(list){
+  return `<div class="players">${(list||G.players.map((p,i)=>i).filter(i=>G.players[i].joined)).map(i=>{ const p=G.players[i];
+    return `<div class="pl ${p.out?'out':''} ${p.jail?'jail':''}">${chip(i)}<span>${money(p.bal)}</span></div>`; }).join('')}</div>`;
 }
 function levelsHtml(i){ const lv=G.props[i].level; return `<div class="lv">${DEEDS[i].rents.map((r,k)=>`<span class="${k+1===lv?'on':''}">${r}</span>`).join('')}</div>`; }
 function propHead(i){ const d=DEEDS[i]; return `<div class="uk">${sw(d.group)}${i+1}. ${esc(d.name)}</div>`; }
@@ -514,43 +627,48 @@ function render(){
   if(G.phase==='setup'){
     const n=G.players.filter(p=>p.joined).length;
     h=`<div class="big">НОВА ГРА</div><div class="txt">Покажіть Банківську картку кожного гравця, щоб приєднатися.</div>
-      <div class="players">${G.players.map(p=>`<div class="pl" style="${p.joined?'':'opacity:.35'}"><span>${p.name}</span><span>${p.joined?'ГРАЄ':'—'}</span></div>`).join('')}</div>
+      <div class="players">${G.players.map((p,i)=>`<div class="pl" style="${p.joined?'':'opacity:.35'}">${chip(i)}<span>${p.joined?'ГРАЄ':'—'}</span></div>`).join('')}</div>
       <div class="actions">${n>=2?`<button class="act" id="start">Почати: ${n} ${plural(n,'гравець','гравці','гравців')}, по ${money(1500)}</button>`:`<span class="dim blink">Потрібно щонайменше 2 гравці</span>`}</div>`;
   } else if(G.phase==='over'){
-    h=`<div class="big">ПЕРЕМОЖЕЦЬ: ${pName(G.winner[0]?.i)}</div>${G.winner.map((r,k)=>`<div>${k+1}. ${pName(r.i)} ${money(r.w)}</div>`).join('')}
+    h=`<div class="big">ПЕРЕМОЖЕЦЬ</div><div class="rl">${chip(G.winner[0]?.i)}</div>${G.winner.map((r,k)=>`<div class="rl">${k+1}. ${chip(r.i)} ${money(r.w)}</div>`).join('')}
       <div class="dim">Гроші плюс власність за ціною купівлі.</div>`;
   } else if(G.debt){
     const d=G.debt;
-    h=`<div class="big">БОРГ</div><div>${pName(d.debtor)} → ${pName(d.creditor)}: ще ${money(d.remaining)}</div>
-      <div class="txt">Покажіть картки власності гравця ${pName(d.debtor)}, щоб віддати їх (${d.creditor==null?'вони повертаються Банку: зніміть будинок':'залиште будинок і передайте картку'}).</div>
+    h=`<div class="big">БОРГ</div><div class="rl">${chip(d.debtor)} → ${chip(d.creditor)}: ще <b>${money(d.remaining)}</b></div>
+      <div class="txt">Покажіть картки власності гравця ${esc(pName(d.debtor))}, щоб віддати їх (${d.creditor==null?'вони повертаються Банку: зніміть будинок':'залиште будинок і передайте картку'}).</div>
       <div class="actions">${ownedBy(d.debtor).map(i=>`<button class="act alt" data-surr="${i}">${esc(pn(i))} ${money(DEEDS[i].price)}</button>`).join('')}</div>`;
   } else switch(M.k){
+    case 'receipt':
+      h=`<div class="big">${esc(M.title)}</div>${M.lines.map(l=>`<div class="rl">${l}</div>`).join('')}${M.who.length?playersHtml(M.who):''}`; break;
+    case 'undoAsk':
+      h=`<div class="big">СКАСУВАТИ?</div><div class="rl">${G.undo?G.undo.label:''}</div>
+        <div class="actions"><button class="act" data-k="undoYes">Так, скасувати</button><button class="act alt" data-k="exit">Ні</button></div>`; break;
     case 'prop': { const i=M.i, pr=G.props[i];
       h=propHead(i)+(pr.owner==null
         ? `<div class="big">${money(DEEDS[i].price)}</div><div class="txt">Нічия. Покажіть Банківську картку, щоб купити, або натисніть «Аукціон».</div>`
-        : `<div>Власник: ${pName(pr.owner)}. Рівень оренди ${pr.level}.</div><div class="big">Оренда ${money(G.cheap>0?DEEDS[i].rents[0]:rentOf(i))}</div>${levelsHtml(i)}
+        : `<div class="rl">Власник: ${chip(pr.owner)} · рівень ${pr.level}</div><div class="big">Оренда ${money(G.cheap>0?DEEDS[i].rents[0]:rentOf(i))}</div>${levelsHtml(i)}
            <div class="txt">Покажіть Банківську картку того, хто став на поле. Картка власника підвищує оренду.</div>`)
-        +`<div class="blink dim">Чекаю на Банківську картку…</div>`; break; }
+        +`<div class="blink dim">Чекаю на Банківську картку… («Вихід», щоб скасувати)</div>`; break; }
     case 'balance': { const pi=M.pi;
-      h=`<div class="big">${pName(pi)}</div><div>Рахунок ${money(G.players[pi].bal)} · Статки ${money(wealth(pi))}</div>
+      h=`<div class="rl">${chip(pi)}</div><div class="big">${money(G.players[pi].bal)}</div><div>Статки ${money(wealth(pi))}</div>
         ${ownedBy(pi).map(i=>`<div>${sw(DEEDS[i].group)}${esc(pn(i))} · Р${G.props[i].level} · ${money(rentOf(i))}</div>`).join('')||'<div class="dim">Власності ще немає</div>'}`; break; }
     case 'go': h=`<div class="big">ВПЕРЕД</div><div>Отримайте ${money(200)}.</div><div class="blink dim">Покажіть свою Банківську картку…</div>`; break;
-    case 'jail': h=`<div class="big">В'ЯЗНИЦЯ</div><div>Сплатіть ${money(100)}, щоб вийти.</div><div class="blink dim">Покажіть свою Банківську картку…</div>`; break;
+    case 'jail': h=`<div class="big">В'ЯЗНИЦЯ</div>${M.who!=null?`<div class="rl">${chip(M.who)}: третя спроба без дубля.</div>`:''}<div>Сплатіть ${money(100)}, щоб вийти.</div><div class="blink dim">Покажіть свою Банківську картку…</div>`; break;
     case 'loc': h=`<div class="big">ЛОКАЦІЯ</div><div class="txt">Сплатіть ${money(100)} і перейдіть на будь-яке поле власності.</div><div class="blink dim">Покажіть свою Банківську картку…</div>`; break;
-    case 'locprop': h=(M.e!=null?eventHead(M.e):`<div class="big">ЛОКАЦІЯ</div><div>${pName(M.pi)}: перемістіть фішку.</div>`)
+    case 'locprop': h=(M.e!=null?eventHead(M.e):`<div class="big">ЛОКАЦІЯ</div><div class="rl">${chip(M.pi)}: перемістіть фішку.</div>`)
       +`<div class="blink dim">Покажіть картку власності поля, на яке ви перейшли…</div>`+(M.e!=null?fixHtml():''); break;
     case 'locbuy': { const i=M.i, pr=G.props[i], who=M.pi==null?'Гравцю':pName(M.pi);
-      h=propHead(i)+`<div class="txt">${pr.owner==null?`Купити за ${money(DEEDS[i].price)} або натиснути «Аукціон».`:pr.owner===M.pi||M.pi==null?`Якщо це ваша власність, ваша Банківська картка підвищить оренду до рівня ${Math.min(5,pr.level+1)}.`:`Власник: ${pName(pr.owner)}. Нічого робити не треба.`}</div>
-        <div class="blink dim">${who}: покажіть Банківську картку або натисніть «Вихід».</div>`; break; }
-    case 'auctionReady': h=propHead(M.i)+`<div class="big">АУКЦІОН</div><div class="txt">Кожне натискання додає ${money(20)}. Називайте суму вголос. Гравці у В'язниці не беруть участі.</div><div class="actions"><button class="act" data-k="bid">Почати аукціон</button></div>`; break;
-    case 'auction': h=propHead(M.i)+`<div class="big">${money(M.bid)}</div><div>${'● '.repeat(M.left)}${'○ '.repeat(4-M.left)}</div><div class="actions"><button class="act" data-k="bid">+20 СТАВКА</button></div>`; break;
+      h=propHead(i)+`<div class="txt">${pr.owner==null?`Купити за ${money(DEEDS[i].price)} або натиснути «Аукціон».`:pr.owner===M.pi||M.pi==null?`Якщо це ваша власність, ваша Банківська картка підвищить оренду до рівня ${Math.min(5,pr.level+1)}.`:`Власник: ${esc(pName(pr.owner))}. Нічого робити не треба.`}</div>
+        <div class="blink dim">${esc(who)}: покажіть Банківську картку або натисніть «Вихід».</div>`; break; }
+    case 'auctionReady': h=propHead(M.i)+`<div class="big">АУКЦІОН</div><div class="txt">Ставки по ${money(20)} або ${money(100)}. Називайте суму вголос. Гравці у В'язниці не беруть участі.</div><div class="actions"><button class="act" data-k="bid">Почати аукціон</button></div>`; break;
+    case 'auction': h=propHead(M.i)+`<div class="big">${money(M.bid)}</div><div>${'● '.repeat(M.left)}${'○ '.repeat(4-M.left)}</div><div class="actions"><button class="act" data-k="bid">+20</button><button class="act" data-k="bid100">+100</button></div>`; break;
     case 'auctionPay': h=propHead(M.i)+`<div class="big">ПРОДАНО ${money(M.bid)}</div><div class="blink dim">Переможець аукціону: покажіть Банківську картку…</div>`; break;
     case 'event': {
       const t=M.type, needsBank=['both','perProp','jail'].includes(t);
       h=eventHead(M.e);
       if(t==='none'||t==='marathon') h+=`<div class="actions"><button class="act" data-k="exit">Готово</button></div>`;
       else if(t==='swap') h+=`<div class="blink dim">${M.picked.length?`Є: ${esc(pn(M.picked[0]))}. Тепер картку власності іншого гравця…`:'Покажіть свою картку власності…'}</div>`;
-      else if(t==='both') h+=`<div class="blink dim">${M.picked.length?`${pName(M.picked[0])} отримує гроші. Тепер Банківську картку іншого гравця…`:'Покажіть першу Банківську картку…'}</div>`;
+      else if(t==='both') h+=`<div class="blink dim">${M.picked.length?`${esc(pName(M.picked[0]))} отримує гроші. Тепер Банківську картку іншого гравця…`:'Покажіть першу Банківську картку…'}</div>`;
       else h+=`<div class="blink dim">${needsBank?'Покажіть Банківську картку…':'Покажіть картку власності…'}</div>`;
       h+=fixHtml(); break; }
     default:
@@ -561,20 +679,39 @@ function render(){
   L.querySelectorAll('[data-surr]').forEach(b=>b.onclick=()=>surrender(+b.dataset.surr));
   L.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>key(b.dataset.k));
   const fx=$('#evFix'); if(fx) fx.onchange=()=>{ if(fx.value!=='') fixEvent(M.code, +fx.value); };
+  $('#undoKey').textContent = G.undo&&!G.debt&&G.phase==='play' ? 'Скасувати…' : 'Скасувати';
   $('#log').innerHTML=G.log.map(t=>`<div>${esc(t)}</div>`).join('')||'<div>Подій ще немає.</div>';
-  renderJail();
+  renderScore(); renderBoard();
 }
-function renderJail(){
-  const box=$('#jailctl');
-  if(G.phase!=='play'){ box.innerHTML='<span class="note">Доступно після початку гри.</span>'; return; }
-  box.innerHTML=active().map(i=>{const p=G.players[i]; return p.jail
-    ? `<button class="btn ghost" data-free="${i}">${p.name}: дубль, вийти з В'язниці</button>`
-    : `<button class="btn ghost" data-jail="${i}">${p.name}: до В'язниці</button>`;}).join('');
-  box.querySelectorAll('[data-jail]').forEach(b=>b.onclick=()=>{G.players[+b.dataset.jail].jail=true; log(`${pName(+b.dataset.jail)} іде до В'язниці`); S.bad(); save(); render();});
-  box.querySelectorAll('[data-free]').forEach(b=>b.onclick=()=>{G.players[+b.dataset.free].jail=false; log(`${pName(+b.dataset.free)}: дубль, вихід з В'язниці`); S.ok(); save(); render();});
+// Табло: big balances everyone at the table can read, plus Jail controls.
+function renderScore(){
+  const box=$('#score'), list=G.players.map((p,i)=>i).filter(i=>G.players[i].joined);
+  if(!list.length){ box.innerHTML='<p class="note">Покажіть Банківські картки, щоб приєднатися до гри.</p>'; return; }
+  box.innerHTML=list.map(i=>{ const p=G.players[i], n=ownedBy(i).length, play=G.phase==='play'&&!p.out;
+    return `<div class="tile ${p.out?'out':''} ${p.jail?'injail':''}" style="--pc:var(--p${i})">
+      <div class="tname"><i></i>${esc(p.name)}${p.out?' · банкрут':p.jail?' · у В’язниці':''}</div>
+      <div class="tbal">${money(p.bal)}</div>
+      <div class="tsub">${n} ${plural(n,'об’єкт','об’єкти','об’єктів')} · статки ${money(wealth(i))}</div>
+      ${play?`<div class="tact">${p.jail
+        ? `<button data-miss="${i}">Не дубль (${p.tries||0}/3)</button><button data-free="${i}">Дубль: вийти</button>`
+        : `<button data-jail="${i}">До В’язниці</button>`}</div>`:''}
+    </div>`; }).join('');
+  box.querySelectorAll('[data-jail]').forEach(b=>b.onclick=()=>sendToJail(+b.dataset.jail));
+  box.querySelectorAll('[data-free]').forEach(b=>b.onclick=()=>freeByDouble(+b.dataset.free));
+  box.querySelectorAll('[data-miss]').forEach(b=>b.onclick=()=>missedDouble(+b.dataset.miss));
+}
+// Поле: every property with its owner and house level, to check the board against the app.
+function renderBoard(){
+  $('#board').innerHTML=DEEDS.map((d,i)=>{ const p=G.props[i], own=p.owner!=null;
+    return `<div class="prow ${own?'':'free'}"><i class="gsw" style="background:var(${GROUPS[d.group]})"></i>
+      <span class="pnum">${i+1}</span><span class="pname">${esc(d.name)}</span>
+      <span class="pown">${own?chip(p.owner):'—'}</span>
+      <span class="pips" aria-label="рівень ${p.level}">${[1,2,3,4,5].map(n=>`<b class="${own&&n<=p.level?'on':''}"></b>`).join('')}</span>
+      <span class="prent">${own?money(rentOf(i)):money(d.price)}</span></div>`; }).join('');
 }
 function startGame(){
-  G.players.forEach(p=>{ if(p.joined) p.bal=1500; }); G.phase='play'; log(`Гру розпочато. Кожен отримує ${money(1500)}.`); S.cash(); save(); setMode({k:'idle'});
+  G.players.forEach(p=>{ if(p.joined){ p.bal=1500; p.tries=0; } }); G.phase='play'; log(`Гру розпочато. Кожен отримує ${money(1500)}.`); S.cash(); save(); setMode({k:'idle'});
+  say('Гру розпочато');
 }
 
 /* ---------- ручні картки та налаштування ---------- */
@@ -615,14 +752,15 @@ function components(bin,W,H){
   const lab=new Int32Array(W*H), st=new Int32Array(W*H), comps=[]; let id=0;
   for(let p=0;p<W*H;p++){
     if(!bin[p]||lab[p]) continue; id++; let sp=0; st[sp++]=p; lab[p]=id;
-    let x0=W,x1=0,y0=H,y1=0,n=0;
-    while(sp){ const q=st[--sp], x=q%W, y=(q-x)/W; n++;
+    let x0=W,x1=0,y0=H,y1=0,n=0, mx=0,my=0,mxx=0,myy=0,mxy=0;
+    while(sp){ const q=st[--sp], x=q%W, y=(q-x)/W; n++; mx+=x; my+=y; mxx+=x*x; myy+=y*y; mxy+=x*y;
       if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
       if(x>0&&bin[q-1]&&!lab[q-1]){lab[q-1]=id;st[sp++]=q-1;}
       if(x<W-1&&bin[q+1]&&!lab[q+1]){lab[q+1]=id;st[sp++]=q+1;}
       if(y>0&&bin[q-W]&&!lab[q-W]){lab[q-W]=id;st[sp++]=q-W;}
       if(y<H-1&&bin[q+W]&&!lab[q+W]){lab[q+W]=id;st[sp++]=q+W;} }
-    const w=x1-x0+1, h=y1-y0+1; comps.push({id,x0,x1:x1+1,y0,y1:y1+1,w,h,n,fill:n/(w*h)});
+    const w=x1-x0+1, h=y1-y0+1, cx=mx/n, cy=my/n, vxx=mxx/n-cx*cx, vyy=myy/n-cy*cy, vxy=mxy/n-cx*cy;
+    comps.push({id,x0,x1:x1+1,y0,y1:y1+1,w,h,n,fill:n/(w*h),vxx,vyy,vxy});
   }
   return {lab,comps};
 }
@@ -635,7 +773,7 @@ function decodeGray(g,W,H,raw){
   const cand=comps.filter(c=>c.h>=12 && c.h>1.3*c.w && c.fill>.5 && c.w>=3);
   let found=null;
   for(const a of cand){
-    const r=a.w/a.h; if(r<.38||r>.7) continue;                     // marker is about twice as tall as wide
+    const r=a.w/a.h; if(r<.3||r>.75) continue;                      // marker is about twice as tall as wide (less when seen at an angle)
     const cy=(a.y0+a.y1)/2;
     const near=cand.filter(c=>c!==a && Math.abs(c.h-a.h)<.22*a.h && Math.abs((c.y0+c.y1)/2-cy)<.15*a.h
       && Math.abs((c.x0+c.x1)/2-(a.x0+a.x1)/2)<a.w*3.4);
@@ -658,13 +796,16 @@ function decodeGray(g,W,H,raw){
     const o = flip ? (x0,x1)=>[-x1,-x0] : (x0,x1)=>[x0,x1];
     const [A0,A1]=o(a.x0,a.x1), [B0,B1]=o(bx0,bx1);
     const side = (B0-A0) > (A1-B1) ? 'R' : 'L';                      // bar part sits away from the notch
-    const sH = a.h/BAR_H;                                            // bar height is about 0.38 strip-widths
+    const sH0 = a.h/BAR_H;                                           // bar height is about 0.38 strip-widths
     const bw=a.w*.105/.18, lefts=others.map(c=>o(c.x0,c.x1)[0]);
     for(const c of pairs){ const [p0,p1]=o(c.x0,c.x1); lefts.push(p0, p1-bw); }
-    // 1) assign each bar to its nearest slot using the height-based scale
-    // 2) refine the scale by least squares for that assignment and check every bar lands on its slot
     const rel = x => x-B0;                                            // distance from the marker's own bar (left edges)
     const mOff = side==='R' ? OFF : 0;                                // marker bar position within slot 0
+    // A card tilted towards or away from the camera looks squashed, so bar height alone can't give the size.
+    // Try several sizes; every candidate must pass the full strip check, and two different answers mean "don't guess".
+    const sW = (B1-B0)/.105, guesses=[1,.9,.8,.7,1.12,1.25,1.4].map(f=>sH0*f); if(Math.abs(sW/sH0-1)>.08) guesses.push(sW);
+    const codesHere=new Set();
+    for(const sH of guesses){
     const slots={}; let ok=true; const fitPts=[];
     for(const x of lefts){ const d=rel(x)/sH+mOff; let e=9,bj,bs,bg;
       for(const [j,sd,gp] of SLOTS){ const q=Math.abs(d-gp); if(q<e){e=q;bj=j;bs=sd;bg=gp;} }
@@ -672,7 +813,7 @@ function decodeGray(g,W,H,raw){
     if(!ok) continue;
     let num=0, den=0; for(const [px,gd] of fitPts){ num+=px*gd; den+=gd*gd; }
     const sFit = den ? num/den : sH;
-    if(sFit<sH*.85 || sFit>sH*1.15) continue;
+    if(sFit<sH*.88 || sFit>sH*1.12) continue;
     let mx=0; for(const [px,gd] of fitPts) mx=Math.max(mx, Math.abs(px/sFit-gd));
     if(mx>.022) continue;
     const code=[-2,-1,0,1,2].map(j=>j?(slots[j]||'.'):side).join('');
@@ -695,14 +836,41 @@ function decodeGray(g,W,H,raw){
     if(verified){ const m0=zone(-2*PITCH-.04,-2*PITCH-.012), m1=zone(2*PITCH+.192,2*PITCH+.22); if(m0<0||m1<0||m0>.25||m1>.25) verified=false; }
     if(!verified) continue;
     if(!raw && !CODES[code]) continue;
+    codesHere.add(code);
+    }
+    if(codesHere.size!==1) continue;
+    const code=[...codesHere][0];
     if(!found || others.length>found.n) found={code,n:others.length};
   }
-  return found && found.code;
+  if(found) return found.code;
+  // no read: report how much the bar-shaped blobs lean, so the caller can straighten the picture
+  const ang=[];
+  for(const c of comps){ if(c.n<40) continue;
+    const tr=c.vxx+c.vyy, det=c.vxx*c.vyy-c.vxy*c.vxy, l1=tr/2+Math.sqrt(Math.max(0,tr*tr/4-det)), l2=tr-l1;
+    if(l2<=0 || l1/l2<5) continue;                                    // keep long thin shapes (bars)
+    let t=.5*Math.atan2(2*c.vxy, c.vxx-c.vyy)*180/Math.PI;          // long axis angle from horizontal
+    t = t>0 ? t-90 : t+90;                                           // lean away from vertical
+    if(Math.abs(t)<45) ang.push(t); }
+  if(ang.length<2) return null;
+  ang.sort((x,y)=>x-y); decodeGray.skew=ang[ang.length>>1];
+  return null;
+}
+function rotateGray(g,W,H,deg){
+  const o=new Uint8Array(W*H).fill(255), c=Math.cos(deg*Math.PI/180), s=Math.sin(deg*Math.PI/180), cx=W/2, cy=H/2;
+  for(let y=0;y<H;y++){ const dy=y-cy; for(let x=0;x<W;x++){ const dx=x-cx, sx=Math.round(cx+c*dx-s*dy), sy=Math.round(cy+s*dx+c*dy);
+    if(sx>=0&&sx<W&&sy>=0&&sy<H) o[y*W+x]=g[sy*W+sx]; } }
+  return o;
+}
+function decodeStraightened(g,W,H,raw){
+  decodeGray.skew=0; let c=decodeGray(g,W,H,raw); if(c) return c;
+  const sk=decodeGray.skew; if(Math.abs(sk)<1.5) return null;
+  for(const d of [0,3,-3]){ c=decodeGray(rotateGray(g,W,H,sk+d),W,H,raw); if(c) return c; }   // the measured lean can be 1–2° off
+  return null;
 }
 function decodeFrameGray(g,W,H,raw){
-  let c=decodeGray(g,W,H,raw); if(c) return c;
+  let c=decodeStraightened(g,W,H,raw); if(c) return c;
   const t=new Uint8Array(W*H); for(let y=0;y<H;y++) for(let x=0;x<W;x++) t[x*H+(H-1-y)]=g[y*W+x];   // card turned sideways: rotate 90°
-  return decodeGray(t,H,W,raw);
+  return decodeStraightened(t,H,W,raw);
 }
 
 /* ---------- камера ---------- */
@@ -748,15 +916,8 @@ async function flipCam(){
 }
 let torch=false;
 async function toggleTorch(){ try{ torch=!torch; await stream.getVideoTracks()[0].applyConstraints({advanced:[{torch}]}); $('#btnTorch').setAttribute('aria-pressed',String(torch)); }catch(e){ torch=false; toast('Ця камера не має підсвітки'); } }
-// Try the angle that worked last time, then one other angle per frame, so tilted cards still read.
-const ANGLES=[0,4,-4,8,-8]; let angleIx=0, tryIx=1;
-function readFrame(){
-  let f=grabGray(ANGLES[angleIx]); if(!f) return {f:null};
-  let code=decodeFrameGray(f.g,f.W,f.H);
-  if(!code){ tryIx=(tryIx+1)%ANGLES.length; if(tryIx===angleIx) tryIx=(tryIx+1)%ANGLES.length;
-    const g=grabGray(ANGLES[tryIx]); code=g&&decodeFrameGray(g.g,g.W,g.H); if(code) angleIx=tryIx; }
-  return {f, code};
-}
+// The decoder straightens tilted and rotated cards itself, so one look per frame is enough.
+function readFrame(){ const f=grabGray(0); return f ? {f, code:decodeFrameGray(f.g,f.W,f.H)} : {f:null}; }
 let loopGen=0;   // one reading loop at a time, even after switching cameras
 function loop(gen){
   if(!scanning || gen!==loopGen) return;
@@ -789,6 +950,11 @@ const ICON_SOUND_ON='<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><
 const ICON_SOUND_OFF='<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
 const syncSound=()=>{ const b=$('#btnSound'); b.innerHTML=soundOn?ICON_SOUND_ON:ICON_SOUND_OFF; b.setAttribute('aria-pressed',String(soundOn)); b.title=b.ariaLabel=soundOn?'Звук увімкнено':'Звук вимкнено'; };
 $('#btnSound').onclick=()=>{ soundOn=!soundOn; store.set('sound',soundOn); syncSound(); S.ok(); };
+function syncVoice(){ const o=$('#optVoice'); if(!o) return; o.checked=voiceOn&&!!ukVoice; o.disabled=!ukVoice; $('#voiceNote').hidden=!!ukVoice; }
+$('#optVoice').onchange=e=>{ voiceOn=e.target.checked; store.set('voice',voiceOn); if(voiceOn) say('Голос увімкнено'); };
+if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice;
+  addEventListener('pointerdown',()=>{ try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); }catch(e){} },{once:true}); }
+else syncVoice();
 $('#btnNew').onclick=()=>{ $('#confirmNew').hidden=false; };
 $('#btnNewNo').onclick=()=>{ $('#confirmNew').hidden=true; };
 $('#btnNewYes').onclick=()=>{ G=freshGame(); $('#confirmNew').hidden=true; save(); setMode({k:'idle'}); };
