@@ -173,24 +173,6 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
 
   <div class="side">
     <div class="panel">
-      <h2>Налаштування</h2>
-      <details><summary>Картки власності (ціни та оренда)</summary>
-        <p class="note">Оренда взята з ваших карток власності, ціни з ігрового поля.</p>
-        <div class="tablewrap"><table id="deeds"></table></div>
-      </details>
-      <label class="opt"><input type="checkbox" id="optVoice"> Озвучувати операції українською</label>
-      <p class="note" id="voiceNote" hidden>На цьому пристрої немає українського голосу. Його можна додати в «Параметри → Універсальний доступ → Усний контент → Голоси».</p>
-      <div class="actions">
-        <button class="btn ghost" id="btnNew">Нова гра</button>
-      </div>
-      <div id="confirmNew" class="actions" hidden>
-        <span class="note" style="flex-basis:100%">Скинути баланси й власність і почати нову гру?</span>
-        <button class="btn" id="btnNewYes">Так, нова гра</button>
-        <button class="btn ghost" id="btnNewNo">Продовжити гру</button>
-      </div>
-    </div>
-
-    <div class="panel">
       <h2>Гравці</h2>
       <div class="score" id="score"></div>
     </div>
@@ -210,6 +192,24 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
       <p class="note">Якщо камера не зчитує картку. Діє так само, як сканування.</p>
       <div class="cards" id="manual"></div>
     </details>
+
+    <div class="panel">
+      <h2>Налаштування</h2>
+      <details><summary>Картки власності (ціни та оренда)</summary>
+        <p class="note">Оренда взята з ваших карток власності, ціни з ігрового поля.</p>
+        <div class="tablewrap"><table id="deeds"></table></div>
+      </details>
+      <label class="opt"><input type="checkbox" id="optVoice"> Озвучувати операції українською</label>
+      <p class="note" id="voiceNote" hidden>На цьому пристрої немає українського голосу. Його можна додати в «Параметри → Універсальний доступ → Усний контент → Голоси».</p>
+      <div class="actions">
+        <button class="btn ghost" id="btnNew">Нова гра</button>
+      </div>
+      <div id="confirmNew" class="actions" hidden>
+        <span class="note" style="flex-basis:100%">Скинути баланси й власність і почати нову гру?</span>
+        <button class="btn" id="btnNewYes">Так, нова гра</button>
+        <button class="btn ghost" id="btnNewNo">Продовжити гру</button>
+      </div>
+    </div>
   </div>
 </div>
 
