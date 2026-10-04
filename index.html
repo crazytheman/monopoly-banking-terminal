@@ -199,8 +199,7 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
         <p class="note">Оренда взята з ваших карток власності, ціни з ігрового поля.</p>
         <div class="tablewrap"><table id="deeds"></table></div>
       </details>
-      <label class="opt"><input type="checkbox" id="optVoice"> Озвучувати операції українською</label>
-      <p class="note" id="voiceNote" hidden>На цьому пристрої немає українського голосу. Його можна додати в «Параметри → Універсальний доступ → Усний контент → Голоси».</p>
+      <label class="opt"><input type="checkbox" id="optVoice"> Озвучувати операції (голос Соломії)</label>
       <div class="actions">
         <button class="btn ghost" id="btnNew">Нова гра</button>
       </div>
@@ -329,12 +328,27 @@ const S = {beep:()=>tone([1320]), ok:()=>tone([880,1320],.08), cash:()=>tone([15
   bad:()=>tone([220,160],.15,'sawtooth'), fanfare:()=>tone([523,659,784,1047,784,1047],.12,'triangle'), tick:()=>tone([660],.05)};
 function toast(t){ const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2600); }
 // Spoken announcements use the device's Ukrainian voice; with no Ukrainian voice installed the app stays silent.
-let voiceOn = store.get('voice', true), ukVoice = null;
-function pickVoice(){ try{ ukVoice=(speechSynthesis.getVoices()||[]).find(v=>/^uk/i.test(v.lang))||null; }catch(e){ ukVoice=null; } syncVoice(); }
-function say(text){
-  if(!voiceOn || !soundOn || !ukVoice || !text) return;
-  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.voice=ukVoice; u.lang=ukVoice.lang; u.rate=1.05; speechSynthesis.speak(u); }catch(e){}
+// Spoken announcements are recorded clips (Solomiya, ElevenLabs) in audio/, played through Web Audio,
+// which iOS allows once the screen has been tapped. say() takes clip names; missing clips are skipped.
+let voiceOn = store.get('voice', true), CLIPS = new Set(), clipBufs = new Map(), voiceSrc = null, voiceSeq = 0;
+fetch('audio/clips.json').then(r=>r.json()).then(a=>{ CLIPS=new Set(a); syncVoice(); }).catch(()=>{});
+function audioCtx(){ AC = AC || new (window.AudioContext||window.webkitAudioContext)(); if(AC.state!=='running') AC.resume().catch(()=>{}); return AC; }
+function clipBuf(k){
+  if(!clipBufs.has(k)) clipBufs.set(k, fetch('audio/'+k+'.mp3').then(r=>r.arrayBuffer())
+    .then(b=>new Promise((res,rej)=>audioCtx().decodeAudioData(b,res,rej))).catch(e=>{ clipBufs.delete(k); throw e; }));
+  return clipBufs.get(k);
 }
+async function say(...keys){
+  keys=keys.flat().filter(k=>k && CLIPS.has(k)); if(!voiceOn || !soundOn || !keys.length) return;
+  const seq=++voiceSeq; try{ voiceSrc?.stop(); }catch(e){}
+  for(const k of keys){
+    let b; try{ b=await clipBuf(k); }catch(e){ continue; }
+    if(seq!==voiceSeq) return;
+    await new Promise(res=>{ const src=audioCtx().createBufferSource(); src.buffer=b; src.connect(AC.destination); src.onended=res; voiceSrc=src; src.start(); });
+    if(seq!==voiceSeq) return;
+  }
+}
+const orClip = (k, fallback) => CLIPS.has(k) ? k : fallback;
 
 /* ---------- квитанція: що щойно сталося ---------- */
 // After every transaction the screen holds the result for a few seconds: who paid whom, house moves, new balances.
@@ -362,7 +376,7 @@ function runQueue(){
       G.undo=null; G.debt={debtor:q.from, creditor:q.to, remaining:q.amt-paid, label:q.label};
       log(`${p.name}: не вистачає ${money(q.amt-paid)} (${q.label})`);
       if(!ownedBy(q.from).length) bankrupt();
-      else { S.bad(); say(`${p.name}: не вистачає грошей`); }
+      else { S.bad(); say(`nomoney-${q.from}`); }
     } else log(`${p.name} → ${pName(q.to)}: ${money(q.amt)}, ${q.label}`);
   }
   save(); render();
@@ -381,7 +395,7 @@ function surrender(i){
     G.debt=null; runQueue();
     if(settled()) receipt('БОРГ ЗАКРИТО', [
       ...d.given.map(k=>`${q(k)}: ${chip(d.debtor)} → ${chip(d.creditor)}${d.creditor==null?' (зніміть будинок)':''}`),
-      change>0 && `Решта ${chip(d.debtor)}: +${money(change)}`], [d.debtor,d.creditor], 'Борг закрито');
+      change>0 && `Решта ${chip(d.debtor)}: +${money(change)}`], [d.debtor,d.creditor], 'debtdone');
     return;
   }
   if(!ownedBy(d.debtor).length) bankrupt();
@@ -390,7 +404,7 @@ function surrender(i){
 function bankrupt(){
   const d=G.debt; const p=G.players[d.debtor]; p.out=true; p.bal=0;
   if(d.creditor!=null){ G.players[d.creditor].bal+=d.remaining; log(`Банк доплачує ${pName(d.creditor)} ${money(d.remaining)} несплаченого боргу`); }
-  log(`${p.name}: БАНКРУТ`); G.debt=null; G.queue=[]; endGame(); say(`${p.name}: банкрут. Гру завершено`);
+  log(`${p.name}: БАНКРУТ`); G.debt=null; G.queue=[]; endGame(); say(`bankrupt-${d.debtor}`, G.winner[0] && `win-${G.winner[0].i}`);
 }
 function endGame(){
   G.phase='over';
@@ -422,7 +436,7 @@ function buy(pi,i,price,how){
   log(`${pl.name} купує «${pn(i)}» за ${money(price)}`); S.cash();
   const bonus=checkSet(i); save();
   receipt('КУПЛЕНО', [`${chip(pi)} купує ${q(i)}: −${money(price)}`, bonus, ...houseLines(before)], [pi],
-    `Куплено. ${pn(i)}. ${price}`, bonus?6500:5000);
+    [`buy-${i+1}`, bonus&&'setbonus'], bonus?6500:5000);
   return true;
 }
 
@@ -448,12 +462,12 @@ function onBank(pi){
     case 'locbuy': if(M.pi!=null && pi!==M.pi) return toast(`Чекаю на картку: ${pName(M.pi)}`); return bankOnProp(pi, M.i, true);
     case 'go':
       G.undo=snap(`ВПЕРЕД (${pl.name}, +${money(200)})`); pl.bal+=200; log(`${pl.name} отримує ${money(200)} за поле «ВПЕРЕД»`); S.cash(); save();
-      return receipt('ВПЕРЕД', [`${chip(pi)}: +${money(200)}`], [pi], 'Вперед. Плюс двісті');
+      return receipt('ВПЕРЕД', [`${chip(pi)}: +${money(200)}`], [pi], 'go');
     case 'jail':
       if(!pl.jail) return toast(`${pl.name} не у В'язниці`);
       G.undo=snap(`вихід з В’язниці (${pl.name}, ${money(100)})`); pl.jail=false; pl.tries=0;
       queuePay(pi,null,100,'вихід з В’язниці'); runQueue();
-      if(settled()) receipt('ВИХІД З В’ЯЗНИЦІ', [`${chip(pi)}: −${money(100)}`], [pi], 'Вихід з вʼязниці');
+      if(settled()) receipt('ВИХІД З В’ЯЗНИЦІ', [`${chip(pi)}: −${money(100)}`], [pi], 'jailout');
       return;
     case 'loc':
       if(pl.bal<100) return toast(`${pl.name}: не вистачає грошей на Локацію`);
@@ -481,18 +495,18 @@ function bankOnProp(pi,i,viaMove){
   if(pr.owner===pi){
     if(!viaMove) G.undo=snap(`підвищення оренди ${q(i)} (${pl.name})`);
     const before=levelsNow(); bump(i,1); log(`${pl.name}: оренда ${pn(i)} → рівень ${pr.level}`); S.ok(); save();
-    return receipt('ОРЕНДУ ПІДВИЩЕНО', [`${chip(pi)}: ${q(i)}`, ...houseLines(before), `Нова оренда: ${money(rentOf(i))}`], [pi], `Оренду підвищено. Рівень ${pr.level}`);
+    return receipt('ОРЕНДУ ПІДВИЩЕНО', [`${chip(pi)}: ${q(i)}`, ...houseLines(before), `Нова оренда: ${money(rentOf(i))}`], [pi], `level-${pr.level}`);
   }
   if(viaMove){ toast(`${pn(i)} належить: ${pName(pr.owner)}. Нічого робити не треба.`); return setMode({k:'idle'}); }
   const owner=G.players[pr.owner], oi=pr.owner;
   if(owner.jail){ log(`${owner.name} у В'язниці: оренди за ${pn(i)} немає`);
-    return receipt('БЕЗ ОРЕНДИ', [`${chip(oi)} у В'язниці: за ${q(i)} не платять, оренда не росте.`], [pi,oi], 'Власник у вʼязниці. Оренди немає'); }
+    return receipt('БЕЗ ОРЕНДИ', [`${chip(oi)} у В'язниці: за ${q(i)} не платять, оренда не росте.`], [pi,oi], 'ownerjail'); }
   let rent=rentOf(i), cheap=false;
   G.undo=snap(`оренда за ${q(i)} (${pl.name} → ${owner.name})`);
   if(G.cheap>0){ rent=DEEDS[i].rents[0]; G.cheap--; cheap=true; log(`Марафон: оренда за рівнем 1 (залишилось ${G.cheap})`); }
   G.undo.label=`оренда за ${q(i)} (${pl.name} → ${owner.name}, ${money(rent)})`;
   const before=levelsNow(); bump(i,1); queuePay(pi,oi,rent,`оренда за «${pn(i)}»`); S.cash(); runQueue();
-  if(settled()) receipt('ОРЕНДА', [`${chip(pi)} → ${chip(oi)}: <b>${money(rent)}</b>`, cheap&&`Марафон: оплата за рівнем 1`, ...houseLines(before)], [pi,oi], `Оренда ${rent}`);
+  if(settled()) receipt('ОРЕНДА', [`${chip(pi)} → ${chip(oi)}: <b>${money(rent)}</b>`, cheap&&`Марафон: оплата за рівнем 1`, ...houseLines(before)], [pi,oi], orClip(`rent-${rent}`,'rent'));
 }
 
 /* ---------- події ---------- */
@@ -500,7 +514,7 @@ function onEvent(e, code){
   S.beep(); if(G.phase!=='play') return toast('Спершу почніть гру');
   if(G.debt) return toast('Спершу закрийте борг');
   G.undo=null; const type=EVENTS[e][2];
-  say(EVENTS[e][0]);
+  say(`ev-${e+1}`);
   if(type==='marathon'){ G.cheap=2; log(`${EVENTS[e][0]}: наступні 2 оренди за рівнем 1`); S.ok(); save(); }
   if(type==='move') return setMode({k:'locprop', pi:null, e, code});
   setMode({k:'event', e, type, code, step:0, picked:[]});
@@ -511,14 +525,14 @@ function eventBank(pi){
     case 'both':
       if(M.picked.includes(pi)) return toast(`${pl.name}: вже отримано`);
       pl.bal+=ev[3]; M.picked.push(pi); log(`${pl.name} отримує ${money(ev[3])} (${ev[0]})`); S.cash(); save();
-      if(M.picked.length>=2) return receipt(ev[0], M.picked.map(k=>`${chip(k)}: +${money(ev[3])}`), M.picked, `Кожен отримує ${ev[3]}`);
+      if(M.picked.length>=2) return receipt(ev[0], M.picked.map(k=>`${chip(k)}: +${money(ev[3])}`), M.picked, 'both');
       return render();
     case 'perProp': { const n=ownedBy(pi).length, amt=ev[3]*n;
       queuePay(pi,null,amt,`${ev[0]} (${n} ${plural(n,'об’єкт','об’єкти','об’єктів')})`); runQueue();
-      if(settled()) receipt(ev[0], [`${chip(pi)}: −${money(amt)}`, `${n} ${plural(n,'об’єкт','об’єкти','об’єктів')} × ${money(ev[3])}`], [pi], `Сплатити ${amt}`);
+      if(settled()) receipt(ev[0], [`${chip(pi)}: −${money(amt)}`, `${n} ${plural(n,'об’єкт','об’єкти','об’єктів')} × ${money(ev[3])}`], [pi], amt?orClip(`pay-${amt}`,'pay'):'paynothing');
       return; }
     case 'jail': pl.jail=true; pl.tries=0; log(`${pl.name} іде до В'язниці (${ev[0]})`); S.bad(); save();
-      return receipt(ev[0], [`${chip(pi)} іде до В'язниці. Поле «ВПЕРЕД» не проходить.`], [pi], `${pl.name} іде до вʼязниці`);
+      return receipt(ev[0], [`${chip(pi)} іде до В'язниці. Поле «ВПЕРЕД» не проходить.`], [pi], `tojail-${pi}`);
     default: return toast('Для цієї картки потрібна картка власності, а не Банківська');
   }
 }
@@ -542,14 +556,14 @@ function eventProp(i){
       { const a=M.picked[0]; if(G.props[a].owner===pr.owner) return toast('Покажіть власність іншого гравця');
         const oa=G.props[a].owner, ob=pr.owner; G.props[a].owner=ob; pr.owner=oa;
         log(`${ev[0]}: ${pn(a)} ↔ ${pn(i)}, власників обміняно`); S.ok(); save();
-        return receipt(ev[0], [`${q(a)}: ${chip(oa)} → ${chip(ob)}`, `${q(i)}: ${chip(ob)} → ${chip(oa)}`, 'Обміняйтеся картками власності. Будинки залишаються на місці.'], [oa,ob], 'Власність обміняно', 6000); }
+        return receipt(ev[0], [`${q(a)}: ${chip(oa)} → ${chip(ob)}`, `${q(i)}: ${chip(ob)} → ${chip(oa)}`, 'Обміняйтеся картками власності. Будинки залишаються на місці.'], [oa,ob], 'swap', 6000); }
     default: return toast('Для цієї картки потрібна Банківська картка, а не картка власності');
   }
   log(hit.length?`${ev[0]}: ${hit.map(k=>`${pn(k)} → рівень ${G.props[k].level}`).join(', ')}`:`${ev[0]}: ${pn(i)} нікому не належить, нічого не змінилося`);
   S.ok(); save();
   const lines=houseLines(before);
   receipt(ev[0], lines.length?lines:[`Нічого не змінилося: ${hit.length?'рівні вже на межі':q(i)+' нікому не належить'}.`],
-    hit.map(k=>G.props[k].owner), lines.length?'Пересуньте будинки':'Нічого не змінилося', lines.length>2?7000:5000);
+    hit.map(k=>G.props[k].owner), lines.length?'houses':'nochange', lines.length>2?7000:5000);
 }
 function fixEvent(code, newE){
   // Зчитаний код належить іншій картці «Подія»: міняємо відповідність і запам'ятовуємо.
@@ -562,11 +576,11 @@ function fixEvent(code, newE){
 }
 
 /* ---------- В'язниця ---------- */
-function sendToJail(i){ const p=G.players[i]; p.jail=true; p.tries=0; log(`${p.name} іде до В'язниці`); S.bad(); save(); say(`${p.name} іде до вʼязниці`); render(); }
+function sendToJail(i){ const p=G.players[i]; p.jail=true; p.tries=0; log(`${p.name} іде до В'язниці`); S.bad(); save(); say(`tojail-${i}`); render(); }
 function freeByDouble(i){ const p=G.players[i]; p.jail=false; p.tries=0; log(`${p.name}: дубль, вихід з В'язниці`); S.ok(); save(); render(); }
 function missedDouble(i){
   const p=G.players[i]; p.tries=(p.tries||0)+1; log(`${p.name}: не дубль (спроба ${p.tries} з 3)`); save();
-  if(p.tries>=3){ S.bad(); say(`${p.name}: третя спроба. Сплатіть сто`); return setMode({k:'jail', who:i}); }
+  if(p.tries>=3){ S.bad(); say(`third-${i}`); return setMode({k:'jail', who:i}); }
   S.tick(); render();
 }
 
@@ -575,7 +589,7 @@ let auctionTimer=null;
 function doUndo(){
   const u=G.undo; if(!u) return;
   G.players=u.players; G.props=u.props; G.bonus=u.bonus; G.cheap=u.cheap||0; G.undo=null; G.queue=[]; log(`Скасовано: ${u.label.replace(/<[^>]+>/g,'')}`); S.ok(); save();
-  receipt('СКАСОВАНО', [u.label, 'Поверніть будинки й картки, як було.'], [], 'Скасовано');
+  receipt('СКАСОВАНО', [u.label, 'Поверніть будинки й картки, як було.'], [], 'undo');
 }
 function key(k){
   S.tick();
@@ -610,7 +624,7 @@ function startAuction(){
     M.left--; tone([M.left>0?520:260],.08);
     if(M.left<=0){ clearInterval(auctionTimer);
       if(M.bid===0){ toast('Ставок немає. Покажіть картку власності ще раз або натисніть «Вихід».'); return setMode({k:'idle'}); }
-      say(`Продано за ${M.bid}`);
+      say(orClip(`sold-${M.bid}`,'sold'));
       return setMode({k:'auctionPay', i:M.i, bid:M.bid}); }
     render();
   }, 1500);
@@ -719,7 +733,7 @@ function renderBoard(){
 }
 function startGame(){
   G.players.forEach(p=>{ if(p.joined){ p.bal=1500; p.tries=0; } }); G.phase='play'; log(`Гру розпочато. Кожен отримує ${money(1500)}.`); S.cash(); save(); setMode({k:'idle'});
-  say('Гру розпочато');
+  say('start');
 }
 
 /* ---------- ручні картки та налаштування ---------- */
@@ -960,11 +974,11 @@ const ICON_SOUND_ON='<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><
 const ICON_SOUND_OFF='<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
 const syncSound=()=>{ const b=$('#btnSound'); b.innerHTML=soundOn?ICON_SOUND_ON:ICON_SOUND_OFF; b.setAttribute('aria-pressed',String(soundOn)); b.title=b.ariaLabel=soundOn?'Звук увімкнено':'Звук вимкнено'; };
 $('#btnSound').onclick=()=>{ soundOn=!soundOn; store.set('sound',soundOn); syncSound(); S.ok(); };
-function syncVoice(){ const o=$('#optVoice'); if(!o) return; o.checked=voiceOn&&!!ukVoice; o.disabled=!ukVoice; $('#voiceNote').hidden=!!ukVoice; }
-$('#optVoice').onchange=e=>{ voiceOn=e.target.checked; store.set('voice',voiceOn); if(voiceOn) say('Голос увімкнено'); };
-if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice;
-  addEventListener('pointerdown',()=>{ try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); }catch(e){} },{once:true}); }
-else syncVoice();
+function syncVoice(){ const o=$('#optVoice'); if(!o) return; o.checked=voiceOn; o.disabled=!CLIPS.size; }
+$('#optVoice').onchange=e=>{ voiceOn=e.target.checked; store.set('voice',voiceOn); if(voiceOn) say('voiceon'); };
+// iOS only lets a page make sound after a tap: wake the audio on every touch (it can fall asleep in the background)
+addEventListener('pointerdown',()=>{ try{ const c=audioCtx(), b=c.createBuffer(1,1,22050), src=c.createBufferSource(); src.buffer=b; src.connect(c.destination); src.start(); }catch(e){} });
+syncVoice();
 $('#btnNew').onclick=()=>{ $('#confirmNew').hidden=false; };
 $('#btnNewNo').onclick=()=>{ $('#confirmNew').hidden=true; };
 $('#btnNewYes').onclick=()=>{ G=freshGame(); $('#confirmNew').hidden=true; save(); setMode({k:'idle'}); };

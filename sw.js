@@ -1,7 +1,13 @@
 // Offline support: the page itself is fetched fresh when online (so updates arrive), everything is cached for offline play.
-const CACHE = 'terminal-v9';
-const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
-self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
+const CACHE = 'terminal-v10';
+const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'audio/clips.json'];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(async c => {
+    await c.addAll(CORE);
+    const clips = await (await fetch('audio/clips.json')).json();              // the voice: ~250 short mp3 clips
+    await c.addAll(clips.map(k => 'audio/' + k + '.mp3'));
+  }).then(() => self.skipWaiting()));
+});
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
