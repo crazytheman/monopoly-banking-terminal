@@ -1,5 +1,5 @@
 // Offline support: the page itself is fetched fresh when online (so updates arrive), everything is cached for offline play.
-const CACHE = 'terminal-v15';
+const CACHE = 'terminal-v16';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'audio/clips.json'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(async c => {

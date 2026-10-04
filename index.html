@@ -514,7 +514,7 @@ function onEvent(e, code){
   S.beep(); if(G.phase!=='play') return toast('Спершу почніть гру');
   if(G.debt) return toast('Спершу закрийте борг');
   G.undo=null; const type=EVENTS[e][2];
-  say(`ev-${e+1}`);
+  say(orClip(`evfull-${e+1}`,`ev-${e+1}`));                        // card title followed by what to do
   if(type==='marathon'){ G.cheap=2; log(`${EVENTS[e][0]}: наступні 2 оренди за рівнем 1`); S.ok(); save(); }
   if(type==='move') return setMode({k:'locprop', pi:null, e, code});
   setMode({k:'event', e, type, code, step:0, picked:[]});
