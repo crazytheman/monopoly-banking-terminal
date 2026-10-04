@@ -156,7 +156,7 @@ td input{width:58px;padding:4px;border:1px solid var(--line);border-radius:4px;b
       </div>
       <div class="readrow">
         <div class="reader" id="reader"><video id="vid" playsinline muted></video><div class="frame"></div><div class="off" id="camoff">Увімкнути камеру</div></div>
-        <div class="rinfo"><div class="rlast" id="rlast">Зчитувач карток</div><div class="rstat" id="rstat">Покажіть білу смужку зі штрихкодом картки камері.</div></div>
+        <div class="rinfo"><div class="rlast" id="rlast">Зчитувач карток</div><div class="rstat" id="rstat">Тримайте картку за край з малюнком, щоб пальці не закривали штрихкод.</div></div>
       </div>
     </div>
     <div class="lcd" id="lcd" aria-live="polite"></div>
@@ -761,6 +761,8 @@ function renderDeeds(){
    The marker gives orientation (tab side) and its own L/R; bar height (about 0.38 strip-widths) gives the scale.
    Only same-kind edges are compared (left with left), so blur and lighting don't shift the result. */
 const OFF=.075, PITCH=.2, BAR_H=.38;
+let PAPER_MIN=.65;   // darkest 'paper' spot must be at least this bright relative to the strip's paper
+let PAPER_TINT=25;   // ...and no more colourful (skin is orange-pink, card paper is neutral)
 const SLOTS=[]; for(const j of [-2,-1,1,2]) for(const [s,off] of [['L',0],['R',OFF]]) SLOTS.push([j,s,j*PITCH+off]);
 function otsu(g){
   const h=new Uint32Array(256); for(let i=0;i<g.length;i++) h[g[i]]++;
@@ -786,7 +788,7 @@ function components(bin,W,H){
   }
   return {lab,comps};
 }
-function decodeGray(g,W,H,raw){
+function decodeGray(g,W,H,raw,unseen,sat){   // unseen: pixels the camera never saw; sat: colourfulness per pixel
   // threshold a little darker than Otsu so the thin white gaps between neighbouring bars survive blur
   const t0=otsu(g); let ds=0, dn=0; for(let i=0;i<W*H;i++) if(g[i]<t0){ ds+=g[i]; dn++; }
   const t=dn ? (ds/dn)+.7*(t0-ds/dn) : t0;
@@ -842,20 +844,30 @@ function decodeGray(g,W,H,raw){
     // Final check: re-draw the code and compare with the picture. In every slot, sample the part only an L bar
     // covers, the part both cover, and the part only an R bar covers, across the middle of the bars.
     const base = B0 - mOff*sFit, yA=a.y0+Math.round(a.h*.3), yB=a.y0+Math.round(a.h*.7);
-    const zone = (u0,u1) => { let dk=0, n=0;
+    let zMean=0, zSat=0;                                              // brightness and colourfulness of the last zone sampled
+    const zone = (u0,u1) => { let dk=0, n=0, sum=0, ss=0;
       for(let u=u0; u<=u1+1e-9; u+=(u1-u0)/4){ const xo=base+u*sFit, xi=Math.round(flip?-xo:xo);
         if(xi<0||xi>=W) return -1;
-        for(let y=yA;y<=yB;y+=Math.max(1,Math.round((yB-yA)/6))){ n++; if(bin[y*W+xi]) dk++; } }
-      return dk/n; };
-    let verified=true;
+        for(let y=yA;y<=yB;y+=Math.max(1,Math.round((yB-yA)/6))){ if(unseen&&unseen[y*W+xi]) return -1; n++; sum+=g[y*W+xi]; if(sat) ss+=sat[y*W+xi]; if(bin[y*W+xi]) dk++; } }
+      zMean=sum/n; zSat=ss/n; return dk/n; };
+    let verified=true; const whites=[];
     for(let j=-2;j<=2 && verified;j++){
-      const st=code[j+2], x=j*PITCH, onlyL=zone(x+.015,x+.055), both=zone(x+.085,x+.095), onlyR=zone(x+.125,x+.165);
-      if(onlyL<0||both<0||onlyR<0){ verified=false; break; }
-      const want = st==='L'?[1,1,0] : st==='R'?[0,1,1] : [0,0,0];
-      [onlyL,both,onlyR].forEach((f,k)=>{ if(want[k]? f<.6 : f>.25) verified=false; });
+      const st=code[j+2], x=j*PITCH, want = st==='L'?[1,1,0] : st==='R'?[0,1,1] : [0,0,0];
+      [[x+.015,x+.055],[x+.085,x+.095],[x+.125,x+.165]].forEach(([u0,u1],k)=>{
+        const f=zone(u0,u1); if(f<0){ verified=false; return; }
+        if(want[k]? f<.6 : f>.25) verified=false;
+        if(!want[k]) whites.push([zMean,zSat]); });
     }
     // the card's white margin must be visible just beyond both ends of the code
-    if(verified){ const m0=zone(-2*PITCH-.04,-2*PITCH-.012), m1=zone(2*PITCH+.192,2*PITCH+.22); if(m0<0||m1<0||m0>.25||m1>.25) verified=false; }
+    if(verified){ for(const [u0,u1] of [[-2*PITCH-.04,-2*PITCH-.012],[2*PITCH+.192,2*PITCH+.22]]){
+      const f=zone(u0,u1); if(f<0||f>.25) verified=false; else whites.push([zMean,zSat]); } }
+    // Every place the code calls "paper" must really be as bright as the card's paper. A thumb, a shadow or
+    // anything else lying over the strip is lighter than ink but darker than paper; then don't guess.
+    if(verified && whites.length){
+      const br=whites.map(w=>w[0]).sort((x,y)=>x-y), paper=br[Math.floor(br.length*.8)];
+      decodeGray.paperRatio=br[0]/paper; if(br[0] < paper*PAPER_MIN) verified=false;
+      if(sat){ const st=whites.map(w=>w[1]).sort((x,y)=>x-y), neutral=st[Math.floor(st.length/2)];
+        decodeGray.tint=st[st.length-1]-neutral; if(decodeGray.tint > PAPER_TINT) verified=false; } }
     if(!verified) continue;
     if(!raw && !CODES[code]) continue;
     codesHere.add(code);
@@ -877,22 +889,24 @@ function decodeGray(g,W,H,raw){
   ang.sort((x,y)=>x-y); decodeGray.skew=ang[ang.length>>1];
   return null;
 }
+// Rotate the picture. Corners that come from outside the camera's view are filled white so they don't form
+// blobs, and flagged in a mask so the strip check never mistakes them for the card's white paper.
 function rotateGray(g,W,H,deg){
-  const o=new Uint8Array(W*H).fill(255), c=Math.cos(deg*Math.PI/180), s=Math.sin(deg*Math.PI/180), cx=W/2, cy=H/2;
+  const o=new Uint8Array(W*H).fill(255), m=new Uint8Array(W*H).fill(1), c=Math.cos(deg*Math.PI/180), s=Math.sin(deg*Math.PI/180), cx=W/2, cy=H/2;
   for(let y=0;y<H;y++){ const dy=y-cy; for(let x=0;x<W;x++){ const dx=x-cx, sx=Math.round(cx+c*dx-s*dy), sy=Math.round(cy+s*dx+c*dy);
-    if(sx>=0&&sx<W&&sy>=0&&sy<H) o[y*W+x]=g[sy*W+sx]; } }
-  return o;
+    if(sx>=0&&sx<W&&sy>=0&&sy<H){ o[y*W+x]=g[sy*W+sx]; m[y*W+x]=0; } } }
+  o.unseen=m; return o;
 }
-function decodeStraightened(g,W,H,raw){
-  decodeGray.skew=0; let c=decodeGray(g,W,H,raw); if(c) return c;
+function decodeStraightened(g,W,H,raw,sat){
+  decodeGray.skew=0; let c=decodeGray(g,W,H,raw,null,sat); if(c) return c;
   const sk=decodeGray.skew; if(Math.abs(sk)<1.5) return null;
-  for(const d of [0,3,-3]){ c=decodeGray(rotateGray(g,W,H,sk+d),W,H,raw); if(c) return c; }   // the measured lean can be 1–2° off
+  for(const d of [0,3,-3]){ const r=rotateGray(g,W,H,sk+d); c=decodeGray(r,W,H,raw,r.unseen,sat&&rotateGray(sat,W,H,sk+d)); if(c) return c; }   // the measured lean can be 1–2° off
   return null;
 }
-function decodeFrameGray(g,W,H,raw){
-  let c=decodeStraightened(g,W,H,raw); if(c) return c;
-  const t=new Uint8Array(W*H); for(let y=0;y<H;y++) for(let x=0;x<W;x++) t[x*H+(H-1-y)]=g[y*W+x];   // card turned sideways: rotate 90°
-  return decodeStraightened(t,H,W,raw);
+function decodeFrameGray(g,W,H,raw,sat){
+  let c=decodeStraightened(g,W,H,raw,sat); if(c) return c;
+  const turn=a=>{ if(!a) return a; const t=new Uint8Array(W*H); for(let y=0;y<H;y++) for(let x=0;x<W;x++) t[x*H+(H-1-y)]=a[y*W+x]; return t; };   // card turned sideways: rotate 90°
+  return decodeStraightened(turn(g),H,W,raw,turn(sat));
 }
 
 /* ---------- камера ---------- */
@@ -910,9 +924,10 @@ function grabGray(deg){
   work.width=W; work.height=H; wx.save();
   if(deg){ wx.translate(W/2,H/2); wx.rotate(deg*Math.PI/180); wx.translate(-W/2,-H/2); }   // straighten a tilted card
   wx.drawImage(v,rx,ry,rw,rh,0,0,W,H); wx.restore();
-  const d=wx.getImageData(0,0,W,H).data, g=new Uint8Array(W*H);
-  for(let i=0;i<W*H;i++) g[i]=d[i*4+3]<255?255:(d[i*4]*77+d[i*4+1]*150+d[i*4+2]*29)>>8;   // corners left empty by rotation count as white
-  return {g,W,H};
+  const d=wx.getImageData(0,0,W,H).data, g=new Uint8Array(W*H), sat=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++){ const r=d[i*4], gg=d[i*4+1], b=d[i*4+2];
+    g[i]=(r*77+gg*150+b*29)>>8; sat[i]=Math.max(r,gg,b)-Math.min(r,gg,b); }                // colourfulness: 0 for white/grey/black
+  return {g,W,H,sat};
 }
 const CAM_OFF='Увімкнути камеру';
 async function startCam(){
@@ -922,7 +937,7 @@ async function startCam(){
     $('#reader').classList.toggle('front', facing==='user');
     const v=$('#vid'); v.srcObject=stream; await v.play(); $('#camoff').hidden=true;
     if(v.videoWidth) $('#reader').style.aspectRatio=`${v.videoWidth}/${v.videoHeight}`;   // show the whole picture, so the frame matches the reading area
-    status('Покажіть білу смужку зі штрихкодом картки камері.');
+    status('Тримайте картку за край з малюнком, щоб пальці не закривали штрихкод.');
     const tr=stream.getVideoTracks()[0]; $('#btnTorch').style.visibility=tr.getCapabilities?.().torch?'visible':'hidden';
     torch=false; $('#btnTorch').setAttribute('aria-pressed','false');
     scanning=true; loop(++loopGen); store.set('cam',true);
@@ -941,7 +956,7 @@ async function flipCam(){
 let torch=false;
 async function toggleTorch(){ try{ torch=!torch; await stream.getVideoTracks()[0].applyConstraints({advanced:[{torch}]}); $('#btnTorch').setAttribute('aria-pressed',String(torch)); }catch(e){ torch=false; toast('Ця камера не має підсвітки'); } }
 // The decoder straightens tilted and rotated cards itself, so one look per frame is enough.
-function readFrame(){ const f=grabGray(0); return f ? {f, code:decodeFrameGray(f.g,f.W,f.H)} : {f:null}; }
+function readFrame(){ const f=grabGray(0); return f ? {f, code:decodeFrameGray(f.g,f.W,f.H,false,f.sat)} : {f:null}; }
 let loopGen=0;   // one reading loop at a time, even after switching cameras
 function loop(gen){
   if(!scanning || gen!==loopGen) return;
