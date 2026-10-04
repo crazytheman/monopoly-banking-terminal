@@ -484,9 +484,9 @@ function onProp(i){
   S.beep();
   if(G.phase!=='play') return toast(G.phase==='setup'?'Спершу почніть гру':'Гру завершено');
   if(G.debt) return surrender(i);
-  if(M.k==='locprop') return setMode({k:'locbuy', pi:M.pi, i});
+  if(M.k==='locprop'){ say(`prop-${i+1}`); return setMode({k:'locbuy', pi:M.pi, i}); }
   if(M.k==='event') return eventProp(i);
-  setMode({k:'prop', i});
+  say(`prop-${i+1}`); setMode({k:'prop', i});
 }
 
 function bankOnProp(pi,i,viaMove){
@@ -653,7 +653,8 @@ function render(){
       <div class="actions">${n>=2?`<button class="act" id="start">Почати: ${n} ${plural(n,'гравець','гравці','гравців')}, по ${money(1500)}</button>`:`<span class="dim blink">Потрібно щонайменше 2 гравці</span>`}</div>`;
   } else if(G.phase==='over'){
     h=`<div class="big">ПЕРЕМОЖЕЦЬ</div><div class="rl">${chip(G.winner[0]?.i)}</div>${G.winner.map((r,k)=>`<div class="rl">${k+1}. ${chip(r.i)} ${money(r.w)}</div>`).join('')}
-      <div class="dim">Гроші плюс власність за ціною купівлі.</div>`;
+      <div class="dim">Гроші плюс власність за ціною купівлі.</div>
+      <div class="actions"><button class="act" id="newGame">Нова гра</button></div>`;
   } else if(G.debt){
     const d=G.debt;
     h=`<div class="big">БОРГ</div><div class="rl">${chip(d.debtor)} → ${chip(d.creditor)}: ще <b>${money(d.remaining)}</b></div>
@@ -698,6 +699,7 @@ function render(){
   }
   L.innerHTML=h;
   const st=$('#start'); if(st) st.onclick=startGame;
+  const ng=$('#newGame'); if(ng) ng.onclick=newGameSamePlayers;
   L.querySelectorAll('[data-surr]').forEach(b=>b.onclick=()=>surrender(+b.dataset.surr));
   L.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>key(b.dataset.k));
   const fx=$('#evFix'); if(fx) fx.onchange=()=>{ if(fx.value!=='') fixEvent(M.code, +fx.value); };
@@ -730,6 +732,11 @@ function renderBoard(){
       <span class="pown">${own?chip(p.owner):'—'}</span>
       <span class="pips" aria-label="рівень ${p.level}">${[1,2,3,4,5].map(n=>`<b class="${own&&n<=p.level?'on':''}"></b>`).join('')}</span>
       <span class="prent">${own?money(rentOf(i)):money(d.price)}</span></div>`; }).join('');
+}
+// After a game ends: back to the start screen with the same players already joined.
+function newGameSamePlayers(){
+  const joined=G.players.map(p=>p.joined); G=freshGame(); G.players.forEach((p,i)=>p.joined=joined[i]);
+  log('Нова гра. Ті самі гравці вже приєдналися.'); S.ok(); save(); setMode({k:'idle'});
 }
 function startGame(){
   G.players.forEach(p=>{ if(p.joined){ p.bal=1500; p.tries=0; } }); G.phase='play'; log(`Гру розпочато. Кожен отримує ${money(1500)}.`); S.cash(); save(); setMode({k:'idle'});

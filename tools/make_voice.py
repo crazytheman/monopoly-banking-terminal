@@ -78,6 +78,7 @@ def phrases():
     }
     for i, name in enumerate(PROPS):
         p[f'buy-{i + 1}'] = f'Куплено: {name}.'
+        p[f'prop-{i + 1}'] = f'{name}.'
     for lv in range(1, 6):
         p[f'level-{lv}'] = f'Оренду підвищено. Рівень {words(lv) if lv > 1 else "один"}.'
     for v in sorted({r for rs in RENTS for r in rs}):
